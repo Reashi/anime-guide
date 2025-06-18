@@ -22,7 +22,16 @@ import { User } from '../../../core/models/user.model';
               <span class="text-xl font-bold text-white">Anime Rehberi</span>
             </a>
           </div>
-
+          <!-- Navigasyon -->
+          <nav class="hidden lg:flex items-center space-x-6">
+            <a routerLink="/" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">ANA SAYFA</a>
+            <a routerLink="/search" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">Trend Animeler</a>
+            <a routerLink="/search" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">Popüler Animeler</a>
+            @if (isLoggedIn()) {
+              <a routerLink="/watchlist" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">İzleme Listesi</a>
+              <a routerLink="/favorites" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">Favoriler</a>
+            }
+          </nav>
           <!-- Arama Çubuğu -->
           <div class="hidden md:flex flex-1 max-w-md mx-8">
             <div class="relative w-full">
@@ -45,10 +54,8 @@ import { User } from '../../../core/models/user.model';
             </div>
           </div>
 
-          <!-- Navigasyon -->
-          <nav class="hidden lg:flex items-center space-x-6">
-            <a routerLink="/" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">Ana Sayfa</a>
-            <a routerLink="/search" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">Ara</a>
+          <!-- Kullanıcı Özel -->
+           <nav class="hidden lg:flex items-center space-x-6">           
             @if (isLoggedIn()) {
               <a routerLink="/watchlist" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">İzleme Listesi</a>
               <a routerLink="/favorites" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">Favoriler</a>

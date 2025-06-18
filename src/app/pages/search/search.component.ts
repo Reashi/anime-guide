@@ -39,7 +39,7 @@ import { FormBuilder, FormGroup, FormControl } from '@angular/forms';
             </div>
 
             <!-- Alt Kontroller -->
-            <div class="bottom-controls flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-700">
+            <div class="bottom-controls flex flex-wrap items-center justify-between gap-4 mt-6 py-4 border-t border-gray-700">
               <!-- Filtreler Dropdown -->
               <div class="relative">
                 <button
@@ -50,143 +50,177 @@ import { FormBuilder, FormGroup, FormControl } from '@angular/forms';
                   <span class="text-sm">
                     {{ getActiveFiltersText() }}
                   </span>
-                  <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="showFiltersDropdown">
+                  <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="showFiltersDropdown" viewBox="0 0 24 24" fill="none">
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </button>
                 
-                <div *ngIf="showFiltersDropdown" class="absolute z-50 w-72 md:w-80 mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-hidden left-0 md:left-auto">
+                <div *ngIf="showFiltersDropdown" class="absolute z-50 w-96 md:w-[1000px] mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-hidden left-0 md:left-auto">
                   <div class="p-3">
-                    <!-- Genreler -->
-                    <div class="mb-3">
-                      <label class="block text-xs font-medium text-gray-300 mb-2">Genreler</label>
-                      <div class="grid grid-cols-4 gap-1 max-h-28 overflow-y-auto custom-scrollbar">
-                        <label 
-                          *ngFor="let genre of genreOptions" 
-                          class="genre-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500"
-                        >
-                          <input
-                            type="checkbox"
-                            [checked]="isGenreSelected(genre)"
-                            (change)="onGenreChange($event, genre)"
-                            class="form-checkbox h-3 w-3 text-purple-600 rounded focus:ring-purple-500 bg-gray-500 border-gray-400 flex-shrink-0"
-                          />
-                          <span class="text-xs truncate">{{ genre }}</span>
-                        </label>
+                    <!-- Ana Grid Container - Yan Yana Dizim -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      
+                      <!-- Genreler -->
+                      <div class="col-span-1">
+                        <label class="block text-xs font-medium text-gray-300 mb-2">Genreler</label>
+                        <div class="grid grid-cols-2 gap-1 max-h-45 overflow-y-auto custom-scrollbar">
+                          <label 
+                            *ngFor="let genre of genreOptions" 
+                            class="genre-filter-item flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500"
+                          >
+                            <input
+                              type="checkbox"
+                              [checked]="isGenreSelected(genre)"
+                              (change)="onGenreChange($event, genre)"
+                              class="form-checkbox h-3 w-3 text-purple-600 rounded focus:ring-purple-500 bg-gray-500 border-gray-400 flex-shrink-0"
+                            />
+                            <span class="text-xs truncate">{{ genre }}</span>
+                          </label>
+                        </div>
                       </div>
-                    </div>
 
-                    <!-- Formatlar -->
-                    <div class="mb-3">
-                      <label class="block text-xs font-medium text-gray-300 mb-2">Formatlar</label>
-                      <div class="grid grid-cols-3 gap-1">
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            [value]="null"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Tümü</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="TV"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">TV</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="MOVIE"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Film</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="OVA"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">OVA</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="ONA"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">ONA</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="SPECIAL"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Özel</span>
-                        </label>
+                      <!-- Formatlar -->
+                      <div class="col-span-1">
+                        <label class="block text-xs font-medium text-gray-300 mb-2">Formatlar</label>
+                        <div class="grid grid-cols-1 gap-1">
+                          <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
+                            <input
+                              type="radio"
+                              [value]="null"
+                              [formControl]="formatControl"
+                              class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
+                            />
+                            <span class="text-xs">Tümü</span>
+                          </label>
+                          <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
+                            <input
+                              type="radio"
+                              value="TV"
+                              [formControl]="formatControl"
+                              class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
+                            />
+                            <span class="text-xs">TV</span>
+                          </label>
+                          <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
+                            <input
+                              type="radio"
+                              value="MOVIE"
+                              [formControl]="formatControl"
+                              class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
+                            />
+                            <span class="text-xs">Film</span>
+                          </label>
+                          <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
+                            <input
+                              type="radio"
+                              value="OVA"
+                              [formControl]="formatControl"
+                              class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
+                            />
+                            <span class="text-xs">OVA</span>
+                          </label>
+                          <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
+                            <input
+                              type="radio"
+                              value="ONA"
+                              [formControl]="formatControl"
+                              class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
+                            />
+                            <span class="text-xs">ONA</span>
+                          </label>
+                          <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
+                            <input
+                              type="radio"
+                              value="SPECIAL"
+                              [formControl]="formatControl"
+                              class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
+                            />
+                            <span class="text-xs">Özel</span>
+                          </label>
+                        </div>
                       </div>
-                    </div>
 
-                    <!-- Durumlar -->
-                    <div class="mb-3">
-                      <label class="block text-xs font-medium text-gray-300 mb-2">Durumlar</label>
-                      <div class="grid grid-cols-2 gap-1">
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            [value]="null"
-                            [formControl]="statusControl"
-                            class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Tümü</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="FINISHED"
-                            [formControl]="statusControl"
-                            class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Tamamlandı</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="RELEASING"
-                            [formControl]="statusControl"
-                            class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Devam Ediyor</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="NOT_YET_RELEASED"
-                            [formControl]="statusControl"
-                            class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Yayınlanmadı</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="CANCELLED"
-                            [formControl]="statusControl"
-                            class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">İptal Edildi</span>
-                        </label>
+                      <!-- Durumlar -->
+                      <div class="col-span-1">
+                        <label class="block text-xs font-medium text-gray-300 mb-2">Durumlar</label>
+                        <div class="grid grid-cols-1 gap-1">
+                          <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
+                            <input
+                              type="radio"
+                              [value]="null"
+                              [formControl]="statusControl"
+                              class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
+                            />
+                            <span class="text-xs">Tümü</span>
+                          </label>
+                          <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
+                            <input
+                              type="radio"
+                              value="FINISHED"
+                              [formControl]="statusControl"
+                              class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
+                            />
+                            <span class="text-xs">Tamamlandı</span>
+                          </label>
+                          <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
+                            <input
+                              type="radio"
+                              value="RELEASING"
+                              [formControl]="statusControl"
+                              class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
+                            />
+                            <span class="text-xs">Devam Ediyor</span>
+                          </label>
+                          <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
+                            <input
+                              type="radio"
+                              value="NOT_YET_RELEASED"
+                              [formControl]="statusControl"
+                              class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
+                            />
+                            <span class="text-xs">Yayınlanmadı</span>
+                          </label>
+                          <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-purple-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
+                            <input
+                              type="radio"
+                              value="CANCELLED"
+                              [formControl]="statusControl"
+                              class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
+                            />
+                            <span class="text-xs">İptal Edildi</span>
+                          </label>
+                        </div>
                       </div>
+
+                      <!-- Çıkış Tarihi -->
+                      <div class="col-span-1">
+                        <label class="block text-xs font-medium text-gray-300 mb-2">Çıkış Tarihi</label>
+                        <div class="grid grid-cols-1 gap-2">
+                          <div>
+                            <label class="block text-xs text-gray-400 mb-1">Başlangıç</label>
+                            <input
+                              type="number"
+                              [formControl]="yearStartControl"
+                              [min]="1960"
+                              [max]="currentYear + 5"
+                              placeholder="Örn: 2020"
+                              class="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                          <div>
+                            <label class="block text-xs text-gray-400 mb-1">Bitiş</label>
+                            <input
+                              type="number"
+                              [formControl]="yearEndControl"
+                              [min]="1960"
+                              [max]="currentYear + 5"
+                              placeholder="Örn: 2024"
+                              class="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
                     </div>
 
                     <!-- Filtre Temizleme Butonu -->
@@ -208,12 +242,12 @@ import { FormBuilder, FormGroup, FormControl } from '@angular/forms';
                 <button
                   type="button"
                   (click)="toggleSortDropdown()"
-                  class="flex items-center justify-between px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-[160px]"
+                  class="flex items-center justify-between px-4 py-2 bg-purple-600 border border-purple-500 rounded-lg text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400 min-w-[160px]"
                 >
                   <span class="text-sm">
                     {{ getSortLabel(sortControl.value) }}
                   </span>
-                  <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="showSortDropdown">
+                  <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="showSortDropdown" viewBox="0 0 24 24" fill="none">
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </button>
