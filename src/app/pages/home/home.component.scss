@@ -1,0 +1,301 @@
+/* Home Page Özel Stilleri */
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #2563EB, #7C3AED);
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="25" cy="25" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="3" fill="rgba(255,255,255,0.05)"/></svg>');
+    animation: float 6s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+/* Hero Title Animation */
+.hero-title {
+  animation: fadeInUp 0.8s ease-out;
+  
+  .highlight {
+    background: linear-gradient(45deg, #FEF08A, #F59E0B);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+  }
+}
+
+.hero-subtitle {
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.hero-buttons {
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+  
+  button {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    
+    &:first-child {
+      background: linear-gradient(135deg, white, #F3F4F6);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+      }
+    }
+    
+    &:last-child {
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
+      }
+    }
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+    
+    &:hover::before {
+      left: 100%;
+    }
+  }
+}
+
+/* Section Animations */
+.section-title {
+  animation: fadeInUp 0.6s ease-out;
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(90deg, #3B82F6, #8B5CF6);
+    border-radius: 2px;
+  }
+}
+
+/* Anime Grid Loading Animation */
+.anime-grid-loading {
+  .skeleton-card {
+    animation: pulse 1.5s ease-in-out infinite;
+    
+    &:nth-child(odd) {
+      animation-delay: 0.1s;
+    }
+    
+    &:nth-child(even) {
+      animation-delay: 0.2s;
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Anime Grid */
+.anime-grid {
+  display: grid;
+  gap: 1.5rem;
+  animation: fadeInUp 0.6s ease-out;
+  
+  .anime-card {
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
+/* Features Section */
+.features-section {
+  position: relative;
+  
+  .feature-card {
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.6s ease-out;
+    
+    &:nth-child(1) { animation-delay: 0.1s; }
+    &:nth-child(2) { animation-delay: 0.2s; }
+    &:nth-child(3) { animation-delay: 0.3s; }
+    
+    &:hover {
+      transform: translateY(-5px);
+      
+      .feature-icon {
+        transform: scale(1.1);
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+      }
+    }
+  }
+  
+  .feature-icon {
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+    
+    &.purple {
+      background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
+    }
+    
+    &.green {
+      background: linear-gradient(135deg, #10B981, #047857);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+    }
+  }
+}
+
+/* Section Link Hover Effects */
+.section-link {
+  position: relative;
+  transition: all 0.2s ease;
+  
+  &::after {
+    content: '→';
+    transition: transform 0.2s ease;
+    display: inline-block;
+    margin-left: 0.5rem;
+  }
+  
+  &:hover {
+    color: #1D4ED8;
+    
+    &::after {
+      transform: translateX(4px);
+    }
+  }
+}
+
+/* Responsive Grid Improvements */
+@media (max-width: 768px) {
+  .anime-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .hero-title {
+    font-size: 2.5rem;
+    line-height: 1.2;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.125rem;
+  }
+  
+  .hero-buttons {
+    flex-direction: column;
+    gap: 1rem;
+    
+    button {
+      width: 100%;
+      padding: 0.875rem 1.5rem;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .anime-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .features-section {
+    .feature-grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  }
+}
+
+/* Loading States */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Fade In Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark Mode Improvements */
+@media (prefers-color-scheme: dark) {
+  .hero-section {
+    background: linear-gradient(135deg, #1E3A8A, #581C87);
+  }
+  
+  .feature-card:hover {
+    background-color: rgba(75, 85, 99, 0.5);
+  }
+}
+
+/* Performance Optimizations */
+.anime-card {
+  contain: layout style paint;
+  will-change: transform;
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus States */
+button:focus,
+a:focus {
+  outline: 2px solid #3B82F6;
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+} 

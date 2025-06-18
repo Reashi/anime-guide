@@ -12,6 +12,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/search/search.component').then(m => m.SearchComponent)
   },
   {
+    path: 'seasons/:season/:year',
+    loadComponent: () => import('./pages/seasons/seasons.component').then(m => m.SeasonsComponent),
+    title: 'Sezon Animeleri - Anime Rehberi'
+  },
+  {
     path: 'anime/:id',
     loadComponent: () => import('./pages/anime-detail/anime-detail.component').then(m => m.AnimeDetailComponent),
     title: 'Anime Detayı - Anime Rehberi'

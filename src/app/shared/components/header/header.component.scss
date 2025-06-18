@@ -1,0 +1,222 @@
+/* Header Component Stilleri */
+
+/* Ana Header Stilleri */
+header {
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background-color: rgba(17, 24, 39, 0.98);
+  }
+}
+
+/* Logo Animasyonu */
+.logo-container {
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+/* Navigasyon Linkleri */
+nav a {
+  position: relative;
+  font-weight: 500;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #8B5CF6, #A855F7);
+    transition: width 0.3s ease;
+  }
+  
+  &:hover::after,
+  &.router-link-active::after {
+    width: 100%;
+  }
+}
+
+/* Arama Input Özel Stilleri */
+.search-input {
+  transition: all 0.3s ease;
+  background: rgba(31, 41, 55, 0.8);
+  
+  &:focus {
+    background: rgba(31, 41, 55, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+  }
+  
+  &::placeholder {
+    color: rgba(156, 163, 175, 0.7);
+  }
+}
+
+/* Arama Butonu */
+.search-button {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    color: #8B5CF6;
+    transform: scale(1.1);
+  }
+}
+
+/* Kullanıcı Avatar */
+.user-avatar {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  }
+}
+
+/* Dropdown Menü */
+.user-dropdown {
+  animation: dropdownFadeIn 0.2s ease-out;
+  transform-origin: top right;
+  
+  a, button {
+    transition: all 0.15s ease;
+    
+    &:hover {
+      background-color: #374151;
+      padding-left: 1.25rem;
+    }
+  }
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Mobil Menü Toggle */
+.mobile-menu-button {
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: rotate(90deg);
+  }
+}
+
+/* Mobil Navigasyon */
+.mobile-nav {
+  animation: slideDown 0.3s ease-out;
+  
+  a, button {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      padding-left: 0.75rem;
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Giriş ve Kayıt Butonları */
+.auth-buttons {
+  a:last-child {
+    background: linear-gradient(135deg, #8B5CF6, #A855F7);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+    }
+  }
+}
+
+/* Responsive İyileştirmeler */
+@media (max-width: 1024px) {
+  .search-input {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    padding: 0.5rem 1rem;
+  }
+  
+  .mobile-search {
+    padding: 1rem 0;
+    border-top: 1px solid rgba(75, 85, 99, 0.3);
+  }
+  
+  .mobile-nav {
+    border-top: 1px solid rgba(75, 85, 99, 0.3);
+    padding: 1rem 0;
+  }
+}
+
+/* Aktif Link Stilleri */
+.router-link-active {
+  color: #A855F7 !important;
+  font-weight: 600;
+}
+
+/* Hover Efektleri */
+.nav-link {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    color: white;
+    text-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+  }
+}
+
+/* Backdrop Blur Desteği */
+@supports (backdrop-filter: blur(8px)) {
+  header {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+/* Tema Geçişleri */
+@media (prefers-color-scheme: dark) {
+  .search-input {
+    background: rgba(31, 41, 55, 0.9);
+  }
+}
+
+/* Focus Stilleri */
+*:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: rgba(139, 92, 246, 0.5);
+  ring-offset: 2px;
+}
+
+/* Animasyon İyileştirmeleri */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+} 

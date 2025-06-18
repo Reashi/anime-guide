@@ -9,6 +9,8 @@ export interface SearchFilters {
   search?: string;
   genres?: string[];
   year?: number;
+  yearStart?: number;
+  yearEnd?: number;
   season?: string;
   format?: string;
   status?: string;
@@ -27,7 +29,7 @@ export class AnilistService {
     console.log('AniList Service - Arama Parametreleri:', { filters, page, perPage });
 
     const query = `
-      query ($page: Int, $perPage: Int, $search: String, $genres: [String], $format: MediaFormat, $status: MediaStatus, $sort: [MediaSort]) {
+      query ($page: Int, $perPage: Int, $search: String, $genres: [String], $format: MediaFormat, $status: MediaStatus, $sort: [MediaSort], $startDateGreater: FuzzyDateInt, $startDateLesser: FuzzyDateInt) {
         Page(page: $page, perPage: $perPage) {
           pageInfo {
             total
@@ -36,7 +38,7 @@ export class AnilistService {
             hasNextPage
             perPage
           }
-          media(search: $search, genre_in: $genres, format: $format, status: $status, sort: $sort, type: ANIME) {
+          media(search: $search, genre_in: $genres, format: $format, status: $status, sort: $sort, type: ANIME, startDate_greater: $startDateGreater, startDate_lesser: $startDateLesser) {
             id
             title {
               romaji
@@ -79,7 +81,9 @@ export class AnilistService {
       genres: filters.genres?.length ? filters.genres : undefined,
       format: filters.format || undefined,
       status: filters.status || undefined,
-      sort: filters.sort || ['POPULARITY_DESC']
+      sort: filters.sort || ['POPULARITY_DESC'],
+      startDateGreater: filters.yearStart ? parseInt(filters.yearStart.toString() + '0101') : undefined,
+      startDateLesser: filters.yearEnd ? parseInt(filters.yearEnd.toString() + '1231') : undefined
     };
 
     console.log('AniList API İsteği:', { query, variables });
@@ -195,6 +199,11 @@ export class AnilistService {
             status
             genres
             seasonYear
+            startDate {
+              year
+              month
+              day
+            }
           }
         }
       }
@@ -231,6 +240,11 @@ export class AnilistService {
             status
             genres
             seasonYear
+            startDate {
+              year
+              month
+              day
+            }
           }
         }
       }
@@ -243,6 +257,135 @@ export class AnilistService {
       catchError(error => {
         console.error('Popular error:', error);
         return of({ media: [] });
+      })
+    );
+  }
+
+  getCurrentSeasonAnime(page: number = 1, perPage: number = 20): Observable<{ media: Anime[] }> {
+    const currentSeason = this.getCurrentSeason();
+    const currentYear = new Date().getFullYear();
+    
+    const query = `
+      query {
+        Page(page: ${page}, perPage: ${perPage}) {
+          media(sort: POPULARITY_DESC, type: ANIME, season: ${currentSeason}, seasonYear: ${currentYear}) {
+            id
+            title {
+              romaji
+              english
+              native
+            }
+            coverImage {
+              large
+              medium
+            }
+            averageScore
+            episodes
+            status
+            genres
+            seasonYear
+            season
+            startDate {
+              year
+              month
+              day
+            }
+          }
+        }
+      }
+    `;
+
+    return this.makeRequest(query).pipe(
+      map(response => ({
+        media: this.transformAnimeData(response.data.Page.media)
+      })),
+      catchError(error => {
+        console.error('Season anime error:', error);
+        return of({ media: [] });
+      })
+    );
+  }
+
+  private getCurrentSeason(): string {
+    const month = new Date().getMonth() + 1; // getMonth() 0-11 döndürür
+    
+    if (month >= 3 && month <= 5) {
+      return 'SPRING';
+    } else if (month >= 6 && month <= 8) {
+      return 'SUMMER';
+    } else if (month >= 9 && month <= 11) {
+      return 'FALL';
+    } else {
+      return 'WINTER';
+    }
+  }
+
+  getCurrentSeasonName(): string {
+    const season = this.getCurrentSeason();
+    const seasonNames = {
+      'SPRING': 'İlkbahar',
+      'SUMMER': 'Yaz',
+      'FALL': 'Sonbahar',
+      'WINTER': 'Kış'
+    };
+    return seasonNames[season as keyof typeof seasonNames] || 'Bilinmeyen';
+  }
+
+  getSeasonAnimes(season: string, year: number, page: number = 1, perPage: number = 24): Observable<{ media: Anime[], pageInfo: any }> {
+    const query = `
+      query {
+        Page(page: ${page}, perPage: ${perPage}) {
+          pageInfo {
+            total
+            currentPage
+            lastPage
+            hasNextPage
+            perPage
+          }
+          media(sort: POPULARITY_DESC, type: ANIME, season: ${season}, seasonYear: ${year}) {
+            id
+            title {
+              romaji
+              english
+              native
+            }
+            coverImage {
+              large
+              medium
+            }
+            averageScore
+            episodes
+            status
+            genres
+            seasonYear
+            season
+            startDate {
+              year
+              month
+              day
+            }
+          }
+        }
+      }
+    `;
+
+    return this.makeRequest(query).pipe(
+      map(response => ({
+        media: this.transformAnimeData(response.data.Page.media),
+        pageInfo: response.data.Page.pageInfo
+      })),
+      catchError(error => {
+        console.error('Season animes error:', error);
+        return of({ 
+          media: [], 
+          pageInfo: {
+            total: 0,
+            currentPage: 1,
+            lastPage: 1,
+            hasNextPage: false,
+            perPage: perPage
+          }
+        });
       })
     );
   }
@@ -268,6 +411,11 @@ export class AnilistService {
           status
           genres
           seasonYear
+          startDate {
+            year
+            month
+            day
+          }
           studios {
             nodes {
               name
@@ -291,7 +439,11 @@ export class AnilistService {
     
     return this.http.post(this.API_URL, { query }).pipe(
       map(response => {
-        console.log('Response:', response);
+        console.log('Full API Response:', response);
+        if ((response as any)?.data?.Page?.media) {
+          console.log('First media item:', (response as any).data.Page.media[0]);
+          console.log('First media startDate:', (response as any).data.Page.media[0]?.startDate);
+        }
         return response;
       })
     );

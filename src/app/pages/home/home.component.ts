@@ -10,162 +10,53 @@ import { AdsenseComponent } from '../../shared/components/adsense/adsense.compon
   selector: 'app-home',
   standalone: true,
   imports: [CommonModule, RouterModule, AnimeCardComponent, AdsenseComponent],
-  template: `
-    <div class="bg-gray-50 dark:bg-gray-900">
-      <!-- Hero Section -->
-      <section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div class="text-center">
-            <h1 class="text-4xl md:text-6xl font-bold mb-6">
-              En İyi Anime <br>
-              <span class="text-yellow-300">Deneyimi</span>
-            </h1>
-            <p class="text-xl md:text-2xl mb-8 text-blue-100">
-              Favori animelerinizi keşfedin, takip edin ve diğer anime severlerle paylaşın
-            </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-              <button class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-                Hemen Başlayın
-              </button>
-              <button class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
-                Daha Fazla Bilgi
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Ad Space -->
-      <app-adsense adSlot="1234567890" adFormat="banner" containerClass="max-w-7xl mx-auto mt-8"></app-adsense>
-
-      <!-- Trending Anime Section -->
-      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div class="flex items-center justify-between mb-8">
-          <h2 class="text-3xl font-bold text-gray-900 dark:text-white">
-            🔥 Trend Animeler
-          </h2>
-          <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">
-            Tümünü Gör →
-          </a>
-        </div>
-        
-        @if (loadingTrending) {
-          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            @for (item of [1,2,3,4,5,6]; track item) {
-              <div class="animate-pulse">
-                <div class="aspect-anime-poster bg-gray-300 rounded-lg mb-4"></div>
-                <div class="h-4 bg-gray-300 rounded mb-2"></div>
-                <div class="h-3 bg-gray-300 rounded w-3/4"></div>
-              </div>
-            }
-          </div>
-        } @else {
-          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            @for (anime of trendingAnime; track anime.id) {
-              <app-anime-card [anime]="anime"></app-anime-card>
-            }
-          </div>
-        }
-      </section>
-
-      <!-- Ad Space -->
-      <app-adsense adSlot="2345678901" adFormat="rectangle" containerClass="max-w-7xl mx-auto"></app-adsense>
-
-      <!-- Popular Anime Section -->
-      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div class="flex items-center justify-between mb-8">
-          <h2 class="text-3xl font-bold text-gray-900 dark:text-white">
-            ⭐ Popüler Animeler
-          </h2>
-          <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">
-            Tümünü Gör →
-          </a>
-        </div>
-        
-        @if (loadingPopular) {
-          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            @for (item of [1,2,3,4,5,6]; track item) {
-              <div class="animate-pulse">
-                <div class="aspect-anime-poster bg-gray-300 rounded-lg mb-4"></div>
-                <div class="h-4 bg-gray-300 rounded mb-2"></div>
-                <div class="h-3 bg-gray-300 rounded w-3/4"></div>
-              </div>
-            }
-          </div>
-        } @else {
-          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            @for (anime of popularAnime; track anime.id) {
-              <app-anime-card [anime]="anime"></app-anime-card>
-            }
-          </div>
-        }
-      </section>
-
-      <!-- Features Section -->
-      <section class="bg-white dark:bg-gray-800 py-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Neden Anime Rehberi?
-            </h2>
-            <p class="text-xl text-gray-600 dark:text-gray-300">
-              Anime deneyiminizi bir üst seviyeye taşıyın
-            </p>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="text-center">
-              <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span class="text-2xl">📱</span>
-              </div>
-              <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Kişisel İzleme Listesi
-              </h3>
-              <p class="text-gray-600 dark:text-gray-300">
-                İzlediğiniz animeleri takip edin, hangi bölümde kaldığınızı unutmayın
-              </p>
-            </div>
-            
-            <div class="text-center">
-              <div class="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span class="text-2xl">❤️</span>
-              </div>
-              <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Favoriler
-              </h3>
-              <p class="text-gray-600 dark:text-gray-300">
-                Sevdiğiniz animeleri favorilere ekleyin ve kolayca erişin
-              </p>
-            </div>
-            
-            <div class="text-center">
-              <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span class="text-2xl">🔍</span>
-              </div>
-              <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Detaylı Anime Bilgisi
-              </h3>
-              <p class="text-gray-600 dark:text-gray-300">
-                AniList API'den gelen güncel ve detaylı anime bilgileri
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-  `
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit {
   private anilistService = inject(AnilistService);
   
+  seasonAnime: Anime[] = [];
   trendingAnime: Anime[] = [];
   popularAnime: Anime[] = [];
+  loadingSeason = true;
   loadingTrending = true;
   loadingPopular = true;
+  currentSeasonName = '';
+  currentYear = new Date().getFullYear();
 
   ngOnInit(): void {
+    this.currentSeasonName = this.anilistService.getCurrentSeasonName();
+    this.loadSeasonAnime();
     this.loadTrendingAnime();
     this.loadPopularAnime();
+  }
+
+  getCurrentSeason(): string {
+    const month = new Date().getMonth() + 1;
+    
+    if (month >= 3 && month <= 5) {
+      return 'SPRING';
+    } else if (month >= 6 && month <= 8) {
+      return 'SUMMER';
+    } else if (month >= 9 && month <= 11) {
+      return 'FALL';
+    } else {
+      return 'WINTER';
+    }
+  }
+
+  private loadSeasonAnime(): void {
+    this.anilistService.getCurrentSeasonAnime(1, 6).subscribe({
+      next: (result) => {
+        this.seasonAnime = result.media;
+        this.loadingSeason = false;
+      },
+      error: (error) => {
+        console.error('Sezon animeleri yüklenemedi:', error);
+        this.loadingSeason = false;
+      }
+    });
   }
 
   private loadTrendingAnime(): void {

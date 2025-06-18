@@ -9,102 +9,8 @@ import { AuthService } from '../../../core/services/auth.service';
   selector: 'app-anime-card',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  template: `
-    <div class="group relative bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-      <!-- Anime Poster -->
-      <div class="relative aspect-anime-poster overflow-hidden">
-        <img 
-          [src]="anime.coverImage" 
-          [alt]="anime.title"
-          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          loading="lazy"
-        >
-        
-        <!-- Status Badge -->
-        @if (anime.status) {
-          <div class="absolute top-2 left-2 px-2 py-1 text-xs font-medium rounded-md"
-               [ngClass]="getStatusBadgeClass(anime.status)">
-            {{ getStatusText(anime.status) }}
-          </div>
-        }
-        
-        <!-- Score Badge -->
-        @if (anime.score) {
-          <div class="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md text-xs font-medium">
-            ⭐ {{ anime.score }}
-          </div>
-        }
-        
-        <!-- Overlay -->
-        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div class="absolute bottom-4 left-4 right-4">
-            <!-- Quick Actions -->
-            @if (isAuthenticated()) {
-              <div class="flex space-x-2 mb-2">
-                <button 
-                  (click)="addToList($event)"
-                  class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded-md transition-colors">
-                  + Liste
-                </button>
-                <button 
-                  (click)="toggleFavorite($event)"
-                  class="bg-red-600 hover:bg-red-700 text-white text-xs py-2 px-3 rounded-md transition-colors">
-                  ♥
-                </button>
-              </div>
-            }
-            
-            <!-- Genres -->
-            <div class="flex flex-wrap gap-1">
-              @for (genre of anime.genres.slice(0, 2); track genre) {
-                <span class="bg-white/20 text-white text-xs px-2 py-1 rounded-md">
-                  {{ genre }}
-                </span>
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Anime Info -->
-      <div class="p-4">
-        <h3 class="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-          <a [routerLink]="['/anime', anime.id]">
-            {{ anime.title }}
-          </a>
-        </h3>
-        
-        <!-- Meta Info -->
-        <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-          @if (anime.format) {
-            <div>{{ getFormatText(anime.format) }}</div>
-          }
-          @if (anime.episodes) {
-            <div>{{ anime.episodes }} bölüm</div>
-          }
-          @if (anime.seasonYear) {
-            <div>{{ anime.seasonYear }}</div>
-          }
-        </div>
-        
-        <!-- Studios -->
-        @if (anime && anime.studios && anime.studios.length > 0) {
-          <div class="flex flex-wrap gap-1 mb-2">
-            @for (studio of anime.studios.slice(0, 2); track studio) {
-              <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                {{ studio }}
-              </span>
-            }
-            @if (anime.studios.length > 2) {
-              <span class="text-xs text-gray-500 dark:text-gray-400">
-                +{{ anime.studios.length - 2 }}
-              </span>
-            }
-          </div>
-        }
-      </div>
-    </div>
-  `
+  templateUrl: './anime-card.component.html',
+  styleUrls: ['./anime-card.component.scss']
 })
 export class AnimeCardComponent {
   @Input() anime!: Anime;
@@ -190,5 +96,38 @@ export class AnimeCardComponent {
       default:
         return format;
     }
+  }
+
+  getFormattedStartDate(): string {
+    // Debug için console'da kontrol edelim
+    console.log('Anime title:', this.anime.title);
+    console.log('Anime startDate:', this.anime.startDate);
+    console.log('Anime seasonYear:', this.anime.seasonYear);
+    
+    // Önce startDate'i kontrol et
+    if (this.anime.startDate) {
+      const { year, month, day } = this.anime.startDate;
+      
+      if (year) {
+        // Sadece yıl varsa
+        if (!month || !day) {
+          return year.toString();
+        }
+
+        // Gün/Ay/Yıl formatında döndür
+        const formattedDay = day.toString().padStart(2, '0');
+        const formattedMonth = month.toString().padStart(2, '0');
+        
+        return `${formattedDay}/${formattedMonth}/${year}`;
+      }
+    }
+    
+    // startDate yoksa seasonYear'ı kullan
+    if (this.anime.seasonYear) {
+      return this.anime.seasonYear.toString();
+    }
+    
+    console.log('No date info for:', this.anime.title);
+    return '';
   }
 } 
