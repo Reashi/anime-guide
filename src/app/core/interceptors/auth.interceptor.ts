@@ -18,5 +18,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     return next(authReq);
   }
   
+  // AniList API istekleri için özel başlıklar ekle
+  if (req.url.includes('anilist.co')) {
+    const modifiedReq = req.clone({
+      headers: req.headers
+        .set('Content-Type', 'application/json')
+        .set('Accept', 'application/json')
+    });
+    return next(modifiedReq);
+  }
+  
   return next(req);
 }; 

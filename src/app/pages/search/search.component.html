@@ -1,177 +1,285 @@
 <div class="min-h-screen bg-gray-900 text-white">
   <div class="container mx-auto px-4 py-8">
     <!-- Arama Başlığı -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold mb-2">
-        {{ searchQuery() ? 'Arama Sonuçları: "' + searchQuery() + '"' : 'Anime Ara' }}
-      </h1>
-      <p class="text-gray-400">
-        {{ totalResults() }} sonuç bulundu
-      </p>
-    </div>
+    <div class="container mx-auto px-4 py-8">
+      <h1 class="text-2xl font-bold mb-4">Arama Sonuçları: "{{ searchControl.value || '' }}"</h1>
+      <p class="text-gray-600 mb-8">{{ animes().length }} sonuç bulundu</p>
 
-    <!-- Filtreler ve Sıralama -->
-    <div class="bg-gray-800 rounded-lg p-6 mb-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Arama -->
-        <div>
-          <label class="block text-sm font-medium mb-2">Anime Ara</label>
-          <input
-            type="text"
-            [(ngModel)]="searchTerm"
-            (input)="onSearchChange()"
-            placeholder="Örn: isekai, naruto..."
-            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
+      <!-- Genişletilmiş Arama Formu -->
+      <div class="bg-gray-800 rounded-lg p-6 mb-8">
+        <!-- Ana Arama Input -->
+        <div class="mb-6">
+          <div class="flex flex-col space-y-2">
+            <label class="text-sm font-medium text-gray-300">Anime Ara</label>
+            <input
+              id="searchInput"
+              type="text"
+              [formControl]="searchControl"
+              placeholder="Örn: isekai, naruto..."
+              class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg"
+              (keyup.enter)="searchAnime()"
+            />
+          </div>
         </div>
 
-        <!-- Sıralama -->
-        <div>
-          <label class="block text-sm font-medium mb-2">Sıralama</label>
-          <select
-            [(ngModel)]="sortBy"
-            (change)="onSortChange()"
-            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="">Varsayılan</option>
-            @for (option of sortOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
+        <!-- İç Filtreler -->
+        <div class="space-y-6">
+          <!-- Türler -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-3">Türler</label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                             <label 
+                 *ngFor="let genre of genreOptions" 
+                 class="genre-filter-item flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600"
+               >
+                <input
+                  type="checkbox"
+                  [checked]="isGenreSelected(genre)"
+                  (change)="onGenreChange($event, genre)"
+                  class="form-checkbox h-4 w-4 text-purple-600 rounded focus:ring-purple-500 bg-gray-600 border-gray-500"
+                />
+                <span class="text-sm">{{ genre }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Format ve Durum -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Format Seçimi -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-3">Format</label>
+                             <div class="grid grid-cols-2 gap-2">
+                 <label class="radio-filter-item flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600">
+                   <input
+                     type="radio"
+                     [value]="null"
+                     [formControl]="formatControl"
+                     class="form-radio h-4 w-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500"
+                   />
+                   <span class="text-sm">Tümü</span>
+                 </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600">
+                  <input
+                    type="radio"
+                    value="TV"
+                    [formControl]="formatControl"
+                    class="form-radio h-4 w-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500"
+                  />
+                  <span class="text-sm">TV</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600">
+                  <input
+                    type="radio"
+                    value="MOVIE"
+                    [formControl]="formatControl"
+                    class="form-radio h-4 w-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500"
+                  />
+                  <span class="text-sm">Film</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600">
+                  <input
+                    type="radio"
+                    value="OVA"
+                    [formControl]="formatControl"
+                    class="form-radio h-4 w-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500"
+                  />
+                  <span class="text-sm">OVA</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600">
+                  <input
+                    type="radio"
+                    value="ONA"
+                    [formControl]="formatControl"
+                    class="form-radio h-4 w-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500"
+                  />
+                  <span class="text-sm">ONA</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600">
+                  <input
+                    type="radio"
+                    value="SPECIAL"
+                    [formControl]="formatControl"
+                    class="form-radio h-4 w-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500"
+                  />
+                  <span class="text-sm">Özel</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Durum Seçimi -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-3">Durum</label>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600">
+                  <input
+                    type="radio"
+                    [value]="null"
+                    [formControl]="statusControl"
+                    class="form-radio h-4 w-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500"
+                  />
+                  <span class="text-sm">Tümü</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600">
+                  <input
+                    type="radio"
+                    value="FINISHED"
+                    [formControl]="statusControl"
+                    class="form-radio h-4 w-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500"
+                  />
+                  <span class="text-sm">Tamamlandı</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600">
+                  <input
+                    type="radio"
+                    value="RELEASING"
+                    [formControl]="statusControl"
+                    class="form-radio h-4 w-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500"
+                  />
+                  <span class="text-sm">Devam Ediyor</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600">
+                  <input
+                    type="radio"
+                    value="NOT_YET_RELEASED"
+                    [formControl]="statusControl"
+                    class="form-radio h-4 w-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500"
+                  />
+                  <span class="text-sm">Yayınlanmadı</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-purple-400 transition-colors bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600">
+                  <input
+                    type="radio"
+                    value="CANCELLED"
+                    [formControl]="statusControl"
+                    class="form-radio h-4 w-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500"
+                  />
+                  <span class="text-sm">İptal Edildi</span>
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Durum -->
-        <div>
-          <label class="block text-sm font-medium mb-2">Durum</label>
-          <select
-            [(ngModel)]="status"
-            (change)="onFilterChange()"
-            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="">Tümü</option>
-            @for (option of statusOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
-        </div>
-
-        <!-- Format -->
-        <div>
-          <label class="block text-sm font-medium mb-2">Format</label>
-          <select
-            [(ngModel)]="format"
-            (change)="onFilterChange()"
-            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="">Tümü</option>
-            @for (option of formatOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
-        </div>
-      </div>
-
-      <!-- Türler -->
-      <div class="mt-4">
-        <label class="block text-sm font-medium mb-2">Türler</label>
-        <div class="flex flex-wrap gap-2">
-          @for (genre of genreOptions; track genre) {
-            <label class="flex items-center">
-              <input
-                type="checkbox"
-                [value]="genre"
-                (change)="onGenreChange($event, genre)"
-                class="mr-2 rounded"
-              />
-              <span class="text-sm">{{ genre }}</span>
-            </label>
-          }
-        </div>
-      </div>
-
-      <!-- Filtre Temizle -->
-      <div class="mt-4">
-        <button
-          (click)="clearFilters()"
-          class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-medium transition-colors"
-        >
-          Filtreleri Temizle
-        </button>
-      </div>
-    </div>
-
-    <!-- Yükleniyor -->
-    @if (loading()) {
-      <div class="text-center py-12">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto"></div>
-        <p class="mt-4 text-gray-400">Aramakta...</p>
-      </div>
-    }
-
-    <!-- Sonuçlar -->
-    @if (!loading() && animes().length > 0) {
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-8">
-        @for (anime of animes(); track anime.id) {
-          <app-anime-card [anime]="anime" />
-        }
-      </div>
-
-      <!-- AdSense Reklam -->
-      <div class="mb-8">
-        <app-adsense
-          [adSlot]="'123456789'"
-          [adFormat]="'rectangle'"
-        />
-      </div>
-
-      <!-- Sayfalama -->
-      @if (pageInfo().lastPage > 1) {
-        <div class="flex justify-center items-center space-x-2">
-          <button
-            (click)="goToPage(pageInfo().currentPage - 1)"
-            [disabled]="pageInfo().currentPage <= 1"
-            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-          >
-            Önceki
-          </button>
-
-          @for (page of getPageNumbers(); track page) {
+                  <!-- Alt Kontroller -->
+         <div class="bottom-controls flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-700">
+          <!-- Sıralama Dropdown (Aynı kalacak) -->
+          <div class="relative">
             <button
-              (click)="goToPage(page)"
-              [class]="page === pageInfo().currentPage ? 
-                'px-4 py-2 bg-purple-600 text-white rounded-lg' :
-                'px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg'"
+              type="button"
+              (click)="toggleSortDropdown()"
+              class="flex items-center justify-between px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-[160px]"
             >
-              {{ page }}
+              <span class="text-sm">
+                {{ getSortLabel(sortControl.value) }}
+              </span>
+              <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="showSortDropdown">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
             </button>
-          }
+            
+            <div *ngIf="showSortDropdown" class="absolute z-50 w-full mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
+              <div class="py-1">
+                <button
+                  type="button"
+                  (click)="selectSort('POPULARITY_DESC')"
+                  class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
+                  [class.bg-gray-600]="sortControl.value === 'POPULARITY_DESC'"
+                >
+                  Popülerlik (Azalan)
+                </button>
+                <button
+                  type="button"
+                  (click)="selectSort('POPULARITY')"
+                  class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
+                  [class.bg-gray-600]="sortControl.value === 'POPULARITY'"
+                >
+                  Popülerlik (Artan)
+                </button>
+                <button
+                  type="button"
+                  (click)="selectSort('SCORE_DESC')"
+                  class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
+                  [class.bg-gray-600]="sortControl.value === 'SCORE_DESC'"
+                >
+                  Puan (Azalan)
+                </button>
+                <button
+                  type="button"
+                  (click)="selectSort('SCORE')"
+                  class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
+                  [class.bg-gray-600]="sortControl.value === 'SCORE'"
+                >
+                  Puan (Artan)
+                </button>
+                <button
+                  type="button"
+                  (click)="selectSort('TRENDING_DESC')"
+                  class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
+                  [class.bg-gray-600]="sortControl.value === 'TRENDING_DESC'"
+                >
+                  Trend (Azalan)
+                </button>
+                <button
+                  type="button"
+                  (click)="selectSort('TRENDING')"
+                  class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
+                  [class.bg-gray-600]="sortControl.value === 'TRENDING'"
+                >
+                  Trend (Artan)
+                </button>
+              </div>
+            </div>
+          </div>
 
-          <button
-            (click)="goToPage(pageInfo().currentPage + 1)"
-            [disabled]="!pageInfo().hasNextPage"
-            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-          >
-            Sonraki
-          </button>
+          <!-- Filtre Temizleme ve Arama Butonları -->
+          <div class="flex gap-2">
+            <button
+              type="button"
+              (click)="clearFilters()"
+              *ngIf="hasActiveFilters()"
+              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors"
+            >
+              Filtreleri Temizle
+            </button>
+            
+            <button
+                            type="button"
+               (click)="searchAnime()"
+               class="search-button px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-medium transition-colors"
+            >
+              Ara
+            </button>
+          </div>
         </div>
-      }
-    }
-
-    <!-- Sonuç Bulunamadı -->
-    @if (!loading() && animes().length === 0 && searchQuery()) {
-      <div class="text-center py-12">
-        <div class="text-6xl mb-4">🔍</div>
-        <h3 class="text-2xl font-bold mb-2">Sonuç Bulunamadı</h3>
-        <p class="text-gray-400 mb-4">
-          "{{ searchQuery() }}" için sonuç bulunamadı
-        </p>
-        <button
-          (click)="clearFilters()"
-          class="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors"
-        >
-          Filtreleri Temizle
-        </button>
       </div>
-    }
+
+      <!-- Arama Sonuçları -->
+      <div class="space-y-8">
+        <!-- İlk Yükleme -->
+        <div *ngIf="loading() && animes().length === 0" class="flex justify-center items-center h-64">
+          <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-purple-500"></div>
+        </div>
+
+        <!-- Sonuç Bulunamadı -->
+        <div *ngIf="!loading() && animes().length === 0" class="text-center py-8">
+          <p class="text-gray-400 text-lg">Sonuç bulunamadı.</p>
+        </div>
+
+        <!-- Anime Listesi -->
+        <div *ngIf="animes().length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <app-anime-card 
+            *ngFor="let anime of animes()"
+            [anime]="anime"
+            class="transition-transform duration-300 hover:scale-105">
+          </app-anime-card>
+        </div>
+
+        <!-- Infinite Scroll Trigger ve Yükleniyor Göstergesi -->
+        <div #loadingTrigger class="flex justify-center items-center py-8" *ngIf="pageInfo().hasNextPage">
+          <div *ngIf="loading()" class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+          <div *ngIf="!loading()" class="text-gray-400">Daha fazla sonuç yükleniyor...</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div> 

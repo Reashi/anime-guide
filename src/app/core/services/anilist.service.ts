@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -19,53 +19,158 @@ export interface SearchFilters {
   providedIn: 'root'
 })
 export class AnilistService {
-  private readonly apiUrl = 'https://graphql.anilist.co';
+  private readonly API_URL = 'https://graphql.anilist.co';
 
   constructor(private http: HttpClient) {}
 
-  // Basit arama fonksiyonu
-  searchAnime(filters: SearchFilters, page: number = 1, perPage: number = 20): Observable<{ media: Anime[], pageInfo: any }> {
-    const searchTerm = filters.search || '';
-    
+  searchAnime(filters: SearchFilters, page: number = 1, perPage: number = 100): Observable<any> {
+    console.log('AniList Service - Arama Parametreleri:', { filters, page, perPage });
+
     const query = `
-      query {
-        Page(page: ${page}, perPage: ${perPage}) {
+      query ($page: Int, $perPage: Int, $search: String, $genres: [String], $format: MediaFormat, $status: MediaStatus, $sort: [MediaSort]) {
+        Page(page: $page, perPage: $perPage) {
           pageInfo {
-            hasNextPage
+            total
             currentPage
             lastPage
+            hasNextPage
             perPage
-            total
           }
-          media(search: "${searchTerm}", type: ANIME, sort: POPULARITY_DESC) {
+          media(search: $search, genre_in: $genres, format: $format, status: $status, sort: $sort, type: ANIME) {
             id
             title {
               romaji
               english
               native
             }
+            synonyms
             coverImage {
               large
               medium
             }
-            averageScore
-            episodes
+            description
+            format
             status
+            episodes
+            duration
             genres
-            seasonYear
+            averageScore
+            popularity
+            startDate {
+              year
+              month
+              day
+            }
+            endDate {
+              year
+              month
+              day
+            }
           }
         }
       }
     `;
 
-    return this.makeRequest(query).pipe(
-      map(response => ({
-        media: this.transformAnimeData(response.data.Page.media),
-        pageInfo: response.data.Page.pageInfo
-      })),
+    // API'ye gönderilecek değişkenler
+    const variables = {
+      page,
+      perPage,
+      search: filters.search ? filters.search.toLowerCase() : undefined,
+      genres: filters.genres?.length ? filters.genres : undefined,
+      format: filters.format || undefined,
+      status: filters.status || undefined,
+      sort: filters.sort || ['POPULARITY_DESC']
+    };
+
+    console.log('AniList API İsteği:', { query, variables });
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    });
+
+    return this.http.post(this.API_URL, {
+      query,
+      variables
+    }, { headers }).pipe(
+      map((response: any) => {
+        console.log('AniList API Ham Yanıt:', response);
+
+        if (response.errors) {
+          throw new Error(response.errors[0].message);
+        }
+
+        const media = response.data.Page.media;
+        const searchTerm = filters.search?.toLowerCase() || '';
+
+        // Sonuçları filtrele ve sırala
+        const filteredMedia = media
+          .map((item: any) => {
+            // Tüm başlıkları ve alternatif isimleri bir dizide topla
+            const titles = [
+              item.title.romaji?.toLowerCase(),
+              item.title.english?.toLowerCase(),
+              item.title.native?.toLowerCase(),
+              ...(item.synonyms?.map((s: string) => s.toLowerCase()) || [])
+            ].filter(Boolean);
+
+            // Benzerlik puanı hesapla
+            let similarityScore = 0;
+            if (searchTerm) {
+              titles.forEach(title => {
+                // Tam eşleşme
+                if (title === searchTerm) similarityScore = 100;
+                // Başlangıç eşleşmesi
+                else if (title.startsWith(searchTerm)) similarityScore = Math.max(similarityScore, 80);
+                // Kelime başlangıcı eşleşmesi
+                else if (title.split(' ').some((word: string) => word.startsWith(searchTerm))) 
+                  similarityScore = Math.max(similarityScore, 60);
+                // İçinde geçme
+                else if (title.includes(searchTerm)) similarityScore = Math.max(similarityScore, 40);
+                // Kısmi eşleşme (en az 2 karakter)
+                else if (searchTerm.length >= 2 && title.includes(searchTerm.substring(0, 2)))
+                  similarityScore = Math.max(similarityScore, 20);
+              });
+            }
+
+            return {
+              ...this.transformSingleAnime(item),
+              similarityScore
+            };
+          })
+          .filter((item: any) => !searchTerm || item.similarityScore > 0)
+          .sort((a: any, b: any) => {
+            // Önce benzerlik puanına göre sırala
+            if (a.similarityScore !== b.similarityScore) {
+              return b.similarityScore - a.similarityScore;
+            }
+            // Benzerlik puanları eşitse popülerliğe göre sırala
+            return b.popularity - a.popularity;
+          });
+
+        // Sayfalama bilgilerini güncelle
+        const pageInfo = response.data.Page.pageInfo;
+        pageInfo.total = filteredMedia.length; // Filtrelenmiş sonuç sayısı
+        pageInfo.lastPage = Math.ceil(pageInfo.total / perPage);
+        pageInfo.hasNextPage = page < pageInfo.lastPage;
+
+        return {
+          media: filteredMedia,
+          pageInfo: pageInfo
+        };
+      }),
       catchError(error => {
-        console.error('Search error:', error);
-        return of({ media: [], pageInfo: { hasNextPage: false, currentPage: 1, lastPage: 1, perPage: 20, total: 0 } });
+        console.error('AniList API Hatası:', error);
+        return of({
+          media: [],
+          pageInfo: {
+            total: 0,
+            currentPage: 1,
+            lastPage: 1,
+            hasNextPage: false,
+            perPage: perPage
+          }
+        });
       })
     );
   }
@@ -184,7 +289,7 @@ export class AnilistService {
   private makeRequest(query: string): Observable<any> {
     console.log('Sending query:', query);
     
-    return this.http.post(this.apiUrl, { query }).pipe(
+    return this.http.post(this.API_URL, { query }).pipe(
       map(response => {
         console.log('Response:', response);
         return response;
@@ -273,32 +378,45 @@ export class AnilistService {
   // Seçenekler
   getSortOptions() {
     return [
-      { value: 'TITLE_ROMAJI', label: 'İsim (A-Z)' },
-      { value: 'TITLE_ROMAJI_DESC', label: 'İsim (Z-A)' },
-      { value: 'SCORE_DESC', label: 'Puan (Yüksekten Alçağa)' },
-      { value: 'SCORE', label: 'Puan (Alçaktan Yükseğe)' },
-      { value: 'START_DATE_DESC', label: 'Çıkış Tarihi (Yeni → Eski)' },
-      { value: 'START_DATE', label: 'Çıkış Tarihi (Eski → Yeni)' },
-      { value: 'EPISODES_DESC', label: 'Bölüm Sayısı (Çok → Az)' },
-      { value: 'EPISODES', label: 'Bölüm Sayısı (Az → Çok)' },
-      { value: 'POPULARITY_DESC', label: 'Popülerlik (Yüksek → Düşük)' },
-      { value: 'TRENDING_DESC', label: 'Trend' }
+      { value: 'POPULARITY_DESC', label: 'Popülerlik (Azalan)' },
+      { value: 'POPULARITY', label: 'Popülerlik (Artan)' },
+      { value: 'SCORE_DESC', label: 'Puan (Azalan)' },
+      { value: 'SCORE', label: 'Puan (Artan)' },
+      { value: 'TRENDING_DESC', label: 'Trend (Azalan)' },
+      { value: 'TRENDING', label: 'Trend (Artan)' },
+      { value: 'START_DATE_DESC', label: 'Yayın Tarihi (Yeni)' },
+      { value: 'START_DATE', label: 'Yayın Tarihi (Eski)' }
     ];
   }
 
   getGenreOptions() {
     return [
-      'Action', 'Adventure', 'Comedy', 'Drama', 'Ecchi', 'Fantasy', 
-      'Horror', 'Mahou Shoujo', 'Mecha', 'Music', 'Mystery', 'Psychological', 
-      'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller'
+      'Action',
+      'Adventure',
+      'Comedy',
+      'Drama',
+      'Ecchi',
+      'Fantasy',
+      'Hentai',
+      'Horror',
+      'Mecha',
+      'Music',
+      'Mystery',
+      'Psychological',
+      'Romance',
+      'Sci-Fi',
+      'Slice of Life',
+      'Sports',
+      'Supernatural',
+      'Thriller'
     ];
   }
 
   getStatusOptions() {
     return [
-      { value: 'FINISHED', label: 'Tamamlandı' },
       { value: 'RELEASING', label: 'Yayınlanıyor' },
-      { value: 'NOT_YET_RELEASED', label: 'Henüz Yayınlanmadı' },
+      { value: 'FINISHED', label: 'Tamamlandı' },
+      { value: 'NOT_YET_RELEASED', label: 'Yakında' },
       { value: 'CANCELLED', label: 'İptal Edildi' },
       { value: 'HIATUS', label: 'Ara Verildi' }
     ];
@@ -307,11 +425,10 @@ export class AnilistService {
   getFormatOptions() {
     return [
       { value: 'TV', label: 'TV' },
-      { value: 'TV_SHORT', label: 'TV Kısa' },
       { value: 'MOVIE', label: 'Film' },
-      { value: 'SPECIAL', label: 'Özel' },
       { value: 'OVA', label: 'OVA' },
       { value: 'ONA', label: 'ONA' },
+      { value: 'SPECIAL', label: 'Özel' },
       { value: 'MUSIC', label: 'Müzik' }
     ];
   }
