@@ -1,0 +1,83 @@
+<!-- Anime Guide App Layout -->
+
+<!-- Main App Container -->
+<div class="min-h-screen flex flex-col">
+  <!-- Header -->
+  <app-header class="flex-shrink-0" ngSkipHydration></app-header>
+  
+  <!-- Main Content -->
+  <main class="flex-1 bg-gray-50 dark:bg-gray-900">
+    <router-outlet></router-outlet>
+  </main>
+  
+  <!-- Footer -->
+  <footer class="flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <!-- About -->
+        <div class="col-span-1">
+          <div class="flex items-center space-x-2 mb-4">
+            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <span class="text-white font-bold text-sm">AR</span>
+            </div>
+            <span class="text-lg font-bold text-gray-900 dark:text-white">Anime Rehberi</span>
+          </div>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">
+            En kapsamlı anime veritabanı ve kişisel izleme listesi uygulaması. 
+            Favori animelerinizi keşfedin, takip edin ve diğer anime severlerle paylaşın.
+          </p>
+        </div>
+        
+        <!-- Quick Links -->
+        <div class="col-span-1">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
+            Hızlı Erişim
+          </h3>
+          <ul class="space-y-2">
+            <li><a href="/browse/trending" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Trend Animeler</a></li>
+            <li><a href="/browse/popular" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Popüler Animeler</a></li>
+            <li><a href="/browse/seasonal" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Sezonluk Animeler</a></li>
+            <li><a href="/browse/upcoming" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Yaklaşan Animeler</a></li>
+          </ul>
+        </div>
+        
+        <!-- Features -->
+        <div class="col-span-1">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
+            Özellikler
+          </h3>
+          <ul class="space-y-2">
+            <li><a href="/watchlist" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">İzleme Listesi</a></li>
+            <li><a href="/favorites" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Favoriler</a></li>
+            <li><a href="/profile" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Profil</a></li>
+            <li><a href="/login" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Giriş Yap</a></li>
+          </ul>
+        </div>
+        
+        <!-- Social & Legal -->
+        <div class="col-span-1">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
+            Bilgiler
+          </h3>
+          <ul class="space-y-2">
+            <li><a href="/privacy" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Gizlilik Politikası</a></li>
+            <li><a href="/terms" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Kullanım Şartları</a></li>
+            <li><a href="/contact" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">İletişim</a></li>
+            <li><a href="/about" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">Hakkımızda</a></li>
+          </ul>
+    </div>
+      </div>
+      
+      <div class="border-t border-gray-200 dark:border-gray-700 mt-8 pt-8">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+          <p class="text-gray-400 text-sm">
+            © 2024 Anime Rehberi. Tüm hakları saklıdır.
+          </p>
+          <p class="text-gray-400 text-sm mt-2 md:mt-0">
+            Veri kaynağı: <a href="https://anilist.co" target="_blank" class="text-blue-500 hover:text-blue-600">AniList</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+  </div>
