@@ -99,20 +99,8 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: Event) {
     const target = event.target as HTMLElement;
-    
-    // Filtre dropdown'u dışına tıklanmışsa kapat
-    // Dropdown içindeki elementlere tıklanırsa kapatma
-    if (this.showFiltersDropdown && 
-        !target.closest('.absolute.z-50') && 
-        !target.closest('[data-dropdown="filters"]') &&
-        !target.closest('.genre-filter-item') &&
-        !target.closest('.radio-filter-item')) {
-      this.showFiltersDropdown = false;
-    }
-    
-    // Sıralama dropdown'u dışına tıklanmışsa kapat
-    if (this.showSortDropdown && !target.closest('.sort-dropdown') && !target.closest('[data-dropdown="sort"]')) {
-      this.showSortDropdown = false;
+    if (!target.closest('.relative')) {
+      this.closeAllDropdowns();
     }
   }
 
@@ -141,7 +129,7 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
   selectSort(sort: string): void {
     this.sortControl.setValue(sort);
     this.showSortDropdown = false;
-    this.loadSeasonAnimes();
+    // loadSeasonAnimes() artık FormControl subscription tarafından çağrılacak
   }
 
   // Label Getirme Fonksiyonları
@@ -249,18 +237,17 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
       const newGenres = currentGenres.filter(g => g !== genre);
       this.genresControl.setValue(newGenres);
     }
-    
-    this.loadSeasonAnimes();
+    // loadSeasonAnimes() artık FormControl subscription tarafından çağrılacak
   }
 
   onFormatChange(event: Event): void {
     event.stopPropagation();
-    this.loadSeasonAnimes();
+    // loadSeasonAnimes() artık FormControl subscription tarafından çağrılacak
   }
 
   onStatusChange(event: Event): void {
     event.stopPropagation();
-    this.loadSeasonAnimes();
+    // loadSeasonAnimes() artık FormControl subscription tarafından çağrılacak
   }
 
 
@@ -270,7 +257,11 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.statusControl.setValue(null);
     this.genresControl.setValue([]);
     this.sortControl.setValue('POPULARITY_DESC');
-    this.loadSeasonAnimes();
+    
+    // Dropdown'u kapat
+    this.showFiltersDropdown = false;
+    
+    // loadSeasonAnimes() artık FormControl subscription tarafından çağrılacak
   }
 
   ngOnInit(): void {
@@ -288,8 +279,34 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.filterAnimes();
       });
 
-    // Form değişikliklerini dinle - sadece arama kontrolü
-    this.subscriptions.push(searchSubscription);
+    // Format değişikliklerini dinle
+    const formatSubscription = this.formatControl.valueChanges.subscribe(() => {
+      this.loadSeasonAnimes();
+    });
+
+    // Status değişikliklerini dinle
+    const statusSubscription = this.statusControl.valueChanges.subscribe(() => {
+      this.loadSeasonAnimes();
+    });
+
+    // Sort değişikliklerini dinle
+    const sortSubscription = this.sortControl.valueChanges.subscribe(() => {
+      this.loadSeasonAnimes();
+    });
+
+    // Genres değişikliklerini dinle
+    const genresSubscription = this.genresControl.valueChanges.subscribe(() => {
+      this.loadSeasonAnimes();
+    });
+
+    // Form değişikliklerini dinle
+    this.subscriptions.push(
+      searchSubscription,
+      formatSubscription,
+      statusSubscription,
+      sortSubscription,
+      genresSubscription
+    );
   }
 
   ngAfterViewInit(): void {
@@ -307,6 +324,11 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private initializeObserver(): void {
+    // IntersectionObserver sadece browser'da mevcuttur
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (this.loadingTrigger && this.loadingTrigger.nativeElement) {
       // Eğer zaten observer varsa disconnect et
       if (this.observer) {
@@ -332,9 +354,7 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       );
       this.observer.observe(this.loadingTrigger.nativeElement);
-      console.log('Intersection Observer initialized');
     } else {
-      console.log('LoadingTrigger not found, retrying in 500ms...');
       setTimeout(() => this.initializeObserver(), 500);
     }
   }
@@ -412,10 +432,12 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.displayedAnimes.set(initialBatch);
     this.currentDisplayedCount = initialBatch.length;
     
-    // Observer'ı yeniden başlat
-    setTimeout(() => {
-      this.initializeObserver();
-    }, 100);
+    // Observer'ı yeniden başlat (sadece browser'da)
+    if (isPlatformBrowser(this.platformId)) {
+      setTimeout(() => {
+        this.initializeObserver();
+      }, 100);
+    }
   }
 
   private allAnimes: Anime[] = []; // Tüm animeler (filtrelenmemiş)
@@ -474,11 +496,7 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
       let currentPage = 1;
       let hasNextPage = true;
       
-      console.log('Loading season animes for', this.currentSeason, this.selectedYear);
-      
       while (hasNextPage && currentPage <= 20) { // Maksimum 20 sayfa (1000 anime)
-        console.log(`Loading page ${currentPage}...`);
-        
         const response = await this.anilistService.getSeasonAnimes(
           this.currentSeason,
           this.selectedYear,
@@ -489,15 +507,12 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
         if (response && response.media) {
           allAnimes = [...allAnimes, ...response.media];
           hasNextPage = response.pageInfo?.hasNextPage || false;
-          console.log(`Page ${currentPage}: ${response.media.length} animes loaded. Total: ${allAnimes.length}`);
         } else {
           hasNextPage = false;
         }
         
         currentPage++;
       }
-      
-      console.log(`Total animes loaded: ${allAnimes.length}`);
       
       // Client-side filtreleme uygula
       let filteredAnimes = allAnimes;

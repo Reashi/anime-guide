@@ -31,7 +31,7 @@
 // Search container styles
 .search-container {
   position: relative;
-  z-index: 9998;
+  z-index: 51;
 }
 
 // Filter dropdown styles - Search benzeri basit yaklaşım
@@ -39,6 +39,7 @@
   position: absolute;
   z-index: 50;
   animation: dropdownSlideIn 0.2s ease-out;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 @keyframes dropdownSlideIn {
@@ -55,6 +56,7 @@
 // Ensure dropdown container is properly positioned
 .relative {
   position: relative;
+  z-index: 49;
   
   button[data-dropdown="filters"] {
     position: relative;
@@ -94,37 +96,106 @@
 // Filter item styles
 .genre-filter-item {
   transition: all 0.2s ease;
+  border: 1px solid transparent;
   
   &:hover {
     background-color: rgb(75 85 99) !important;
     color: rgb(196 181 253) !important;
+    border-color: #8B5CF6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
   }
   
   input[type="checkbox"] {
     accent-color: rgb(147 51 234);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:checked {
+      background-color: #8B5CF6;
+      border-color: #8B5CF6;
+    }
+
+    &:hover:not(:checked) {
+      border-color: #8B5CF6;
+    }
     
     &:focus {
       outline: 2px solid rgb(147 51 234);
       outline-offset: 2px;
     }
+  }
+
+  input:checked + span {
+    color: #A855F7;
+    font-weight: 500;
   }
 }
 
 .radio-filter-item {
   transition: all 0.2s ease;
+  border: 1px solid transparent;
   
   &:hover {
     background-color: rgb(75 85 99) !important;
     color: rgb(196 181 253) !important;
+    border-color: #8B5CF6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.15);
   }
   
   input[type="radio"] {
     accent-color: rgb(147 51 234);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:checked {
+      background-color: #8B5CF6;
+      border-color: #8B5CF6;
+    }
+
+    &:hover:not(:checked) {
+      border-color: #8B5CF6;
+    }
     
     &:focus {
       outline: 2px solid rgb(147 51 234);
       outline-offset: 2px;
     }
+  }
+
+  input:checked + span {
+    color: #A855F7;
+    font-weight: 500;
+  }
+}
+
+// Radio ve Checkbox Özel Stilleri
+.form-radio {
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:checked {
+    background-color: #8B5CF6;
+    border-color: #8B5CF6;
+  }
+
+  &:hover:not(:checked) {
+    border-color: #8B5CF6;
+  }
+}
+
+.form-checkbox {
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:checked {
+    background-color: #8B5CF6;
+    border-color: #8B5CF6;
+  }
+
+  &:hover:not(:checked) {
+    border-color: #8B5CF6;
   }
 }
 
@@ -146,7 +217,7 @@
   }
 
   @media (min-width: 1280px) {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(5, 1fr);
   }
 }
 
@@ -420,6 +491,9 @@ button:focus {
 
 // Grid layout override - ensure maximum 5 columns and equal heights
 .anime-grid {
+  position: relative;
+  z-index: 1;
+  
   @media (min-width: 1280px) { // xl breakpoint
     grid-template-columns: repeat(5, 1fr) !important;
   }
