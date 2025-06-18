@@ -17,6 +17,11 @@ export const routes: Routes = [
     title: 'Sezon Animeleri - Anime Rehberi'
   },
   {
+    path: 'trending',
+    loadComponent: () => import('./pages/trending/trending.component').then(m => m.TrendingComponent),
+    title: 'Trend Animeler - Anime Rehberi'
+  },
+  {
     path: 'anime/:id',
     loadComponent: () => import('./pages/anime-detail/anime-detail.component').then(m => m.AnimeDetailComponent),
     title: 'Anime Detayı - Anime Rehberi'

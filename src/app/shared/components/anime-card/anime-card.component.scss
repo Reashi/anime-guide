@@ -79,6 +79,9 @@
     transition: all 0.2s ease;
     font-weight: 600;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    position: relative;
+    z-index: 10;
     
     &:hover {
       transform: translateY(-1px);
@@ -87,6 +90,11 @@
     
     &:active {
       transform: translateY(0);
+    }
+    
+    &:focus {
+      outline: 2px solid rgba(255, 255, 255, 0.5);
+      outline-offset: 2px;
     }
   }
 }
@@ -269,4 +277,41 @@ a:focus {
 
 .group:hover .poster-container img {
   will-change: transform;
+}
+
+/* Equal Height Cards */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.group {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none; // Remove link underline
+  
+  &:hover {
+    text-decoration: none; // Keep no decoration on hover
+  }
+  
+  &:focus {
+    outline: 2px solid #3B82F6;
+    outline-offset: 2px;
+  }
+}
+
+/* Ensure consistent spacing */
+.anime-info {
+  .meta-info {
+    min-height: 3.5rem; // Reserve space for up to 3 lines of meta info
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+  
+  .studio-section {
+    min-height: 2rem; // Reserve space for studio tags
+  }
 } 

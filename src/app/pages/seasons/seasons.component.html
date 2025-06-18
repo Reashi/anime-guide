@@ -71,11 +71,11 @@
           </div>
 
           <!-- Ana Kontroller -->
-          <div class="main-controls flex flex-wrap items-center justify-between gap-4">
-            <!-- Sol Taraf - Filtreler ve Sıralama -->
-            <div class="left-controls flex flex-wrap items-center gap-3">
+          <div class="main-controls flex flex-wrap items-center justify-center gap-4">
+            <!-- Ortalanmış Kontroller - Filtreler ve Sıralama -->
+            <div class="center-controls flex flex-wrap items-center justify-center gap-3">
               <!-- Filtreler Dropdown -->
-              <div class="relative inline-block">
+              <div class="relative">
                 <button
                   type="button"
                   (click)="toggleFiltersDropdown()"
@@ -89,16 +89,12 @@
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </button>
-              </div>
 
-              <!-- Dropdown Overlay -->
-              <div *ngIf="showFiltersDropdown" class="dropdown-overlay" (click)="toggleFiltersDropdown()"></div>
-
-              <!-- Dropdown Content -->
-              <div *ngIf="showFiltersDropdown" class="filters-dropdown">
+                <!-- Dropdown Content -->
+                <div *ngIf="showFiltersDropdown" class="absolute z-50 w-96 md:w-[750px] mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-hidden left-0 md:left-auto">
                 <div class="p-3">
                   <!-- Ana Grid Container - Yan Yana Dizim -->
-                  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     
                     <!-- Genreler -->
                     <div class="col-span-1">
@@ -128,6 +124,7 @@
                             type="radio"
                             [value]="null"
                             [formControl]="formatControl"
+                            (change)="onFormatChange($event)"
                             class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                           />
                           <span class="text-xs">Tümü</span>
@@ -137,6 +134,7 @@
                             type="radio"
                             value="TV"
                             [formControl]="formatControl"
+                            (change)="onFormatChange($event)"
                             class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                           />
                           <span class="text-xs">TV</span>
@@ -146,6 +144,7 @@
                             type="radio"
                             value="MOVIE"
                             [formControl]="formatControl"
+                            (change)="onFormatChange($event)"
                             class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                           />
                           <span class="text-xs">Film</span>
@@ -155,6 +154,7 @@
                             type="radio"
                             value="OVA"
                             [formControl]="formatControl"
+                            (change)="onFormatChange($event)"
                             class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                           />
                           <span class="text-xs">OVA</span>
@@ -164,6 +164,7 @@
                             type="radio"
                             value="ONA"
                             [formControl]="formatControl"
+                            (change)="onFormatChange($event)"
                             class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                           />
                           <span class="text-xs">ONA</span>
@@ -173,6 +174,7 @@
                             type="radio"
                             value="SPECIAL"
                             [formControl]="formatControl"
+                            (change)="onFormatChange($event)"
                             class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                           />
                           <span class="text-xs">Özel</span>
@@ -189,6 +191,7 @@
                             type="radio"
                             [value]="null"
                             [formControl]="statusControl"
+                            (change)="onStatusChange($event)"
                             class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                           />
                           <span class="text-xs">Tümü</span>
@@ -198,6 +201,7 @@
                             type="radio"
                             value="FINISHED"
                             [formControl]="statusControl"
+                            (change)="onStatusChange($event)"
                             class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                           />
                           <span class="text-xs">Tamamlandı</span>
@@ -207,6 +211,7 @@
                             type="radio"
                             value="RELEASING"
                             [formControl]="statusControl"
+                            (change)="onStatusChange($event)"
                             class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                           />
                           <span class="text-xs">Devam Ediyor</span>
@@ -216,6 +221,7 @@
                             type="radio"
                             value="NOT_YET_RELEASED"
                             [formControl]="statusControl"
+                            (change)="onStatusChange($event)"
                             class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                           />
                           <span class="text-xs">Yayınlanmadı</span>
@@ -225,6 +231,7 @@
                             type="radio"
                             value="CANCELLED"
                             [formControl]="statusControl"
+                            (change)="onStatusChange($event)"
                             class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                           />
                           <span class="text-xs">İptal Edildi</span>
@@ -232,36 +239,7 @@
                       </div>
                     </div>
 
-                    <!-- Çıkış Tarihi -->
-                    <div class="col-span-1">
-                      <label class="block text-xs font-medium text-gray-300 mb-2">Çıkış Tarihi</label>
-                      <div class="grid grid-cols-1 gap-2">
-                        <div>
-                          <label class="block text-xs text-gray-400 mb-1">Başlangıç</label>
-                          <select
-                            [formControl]="yearStartControl"
-                            class="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
-                          >
-                            <option value="">Tümü</option>
-                            @for (year of getYearOptions(); track year) {
-                              <option [value]="year">{{ year }}</option>
-                            }
-                          </select>
-                        </div>
-                        <div>
-                          <label class="block text-xs text-gray-400 mb-1">Bitiş</label>
-                          <select
-                            [formControl]="yearEndControl"
-                            class="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
-                          >
-                            <option value="">Tümü</option>
-                            @for (year of getYearOptions(); track year) {
-                              <option [value]="year">{{ year }}</option>
-                            }
-                          </select>
-                        </div>
-                      </div>
-                    </div>
+
                     
                   </div>
 
@@ -279,37 +257,40 @@
               </div>
             </div>
 
-            <!-- Sıralama Dropdown -->
-            <div class="relative">
-              <button
-                type="button"
-                (click)="toggleSortDropdown()"
-                data-dropdown="sort"
-                class="flex items-center justify-between px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-[200px]"
-              >
-                <span class="text-sm">{{ getSortLabel(sortControl.value) }}</span>
-                <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="showSortDropdown" viewBox="0 0 24 24" fill="none">
-                  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </button>
-              
-              <div *ngIf="showSortDropdown" class="absolute z-[9999] w-full mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-xl overflow-hidden sort-dropdown">
+              <!-- Sıralama Dropdown -->
+              <div class="relative">
                 <button
-                  *ngFor="let option of sortOptions"
                   type="button"
-                  (click)="selectSort(option.value)"
-                  class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600 focus:outline-none focus:bg-gray-600 transition-colors"
-                  [class.bg-purple-600]="sortControl.value === option.value"
+                  (click)="toggleSortDropdown()"
+                  data-dropdown="sort"
+                  class="flex items-center justify-between px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-[200px]"
                 >
-                  {{ option.label }}
+                  <span class="text-sm">{{ getSortLabel(sortControl.value) }}</span>
+                  <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="showSortDropdown" viewBox="0 0 24 24" fill="none">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
                 </button>
+                
+                <div *ngIf="showSortDropdown" class="absolute z-[9999] w-full mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-xl overflow-hidden sort-dropdown">
+                  <button
+                    *ngFor="let option of sortOptions"
+                    type="button"
+                    (click)="selectSort(option.value)"
+                    class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600 focus:outline-none focus:bg-gray-600 transition-colors"
+                    [class.bg-purple-600]="sortControl.value === option.value"
+                  >
+                    {{ option.label }}
+                  </button>
+                </div>
               </div>
             </div>
+          </div>
 
-          <!-- Sağ Taraf - Sonuç Sayısı -->
-          <div class="right-controls">
-            <div class="results-info text-sm text-gray-400">
-              <span class="font-medium text-white">{{ totalResults() }}</span> sonuç bulundu
+          <!-- Sonuç Sayısı - Ortalanmış -->
+          <div class="results-info-section text-center mt-4">
+            <div class="text-sm text-gray-400">
+              <span class="font-medium text-white">{{ displayedAnimes().length }}</span> / 
+              <span class="font-medium text-white">{{ totalResults() }}</span> sonuç gösteriliyor
             </div>
           </div>
         </div>
@@ -327,16 +308,23 @@
       </div>
 
       <!-- Results Grid -->
-      <div *ngIf="!loading() && animes().length > 0" class="anime-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+      <div *ngIf="!loading() && displayedAnimes().length > 0" class="anime-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4">
         <app-anime-card 
-          *ngFor="let anime of animes(); trackBy: trackByAnimeId" 
+          *ngFor="let anime of displayedAnimes(); trackBy: trackByAnimeId" 
           [anime]="anime"
           class="fade-in"
         ></app-anime-card>
       </div>
+      
+      <!-- Loading More State -->
+      <div #loadingTrigger *ngIf="!loading() && hasMoreToLoad()" class="text-center py-8">
+        <div *ngIf="loadingMore()" class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+        <p *ngIf="loadingMore()" class="mt-2 text-gray-400">Daha fazla anime yükleniyor...</p>
+        <p *ngIf="!loadingMore()" class="mt-2 text-gray-500 text-sm">Aşağı kaydırın daha fazla anime yüklemek için...</p>
+      </div>
 
       <!-- No Results -->
-      <div *ngIf="!loading() && animes().length === 0" class="text-center py-12">
+      <div *ngIf="!loading() && displayedAnimes().length === 0" class="text-center py-12">
         <div class="text-6xl mb-4">😕</div>
         <h3 class="text-xl font-semibold text-gray-300 mb-2">Anime bulunamadı</h3>
         <p class="text-gray-500">Bu sezon için anime bulunamadı. Farklı bir sezon veya yıl deneyin.</p>

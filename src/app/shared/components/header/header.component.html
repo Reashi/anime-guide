@@ -13,8 +13,8 @@
       <!-- Navigasyon -->
       <nav class="hidden lg:flex items-center space-x-6">
         <a routerLink="/" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">ANA SAYFA</a>
-        <a routerLink="/search" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">Trend Animeler</a>
-        <a routerLink="/search" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">Popüler Animeler</a>
+        <a routerLink="/trending" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">TREND ANİMELER</a>
+        <a routerLink="/search" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">ARAMA</a>
         @if (isLoggedIn()) {
           <a routerLink="/watchlist" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">İzleme Listesi</a>
           <a routerLink="/favorites" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors">Favoriler</a>
@@ -119,6 +119,7 @@
       <div class="lg:hidden border-t border-gray-800 pt-4 pb-4">
         <div class="flex flex-col space-y-2">
           <a routerLink="/" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors py-2">Ana Sayfa</a>
+          <a routerLink="/trending" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors py-2">Trend Animeler</a>
           <a routerLink="/search" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors py-2">Ara</a>
           @if (isLoggedIn()) {
             <a routerLink="/watchlist" routerLinkActive="text-purple-400" class="text-gray-300 hover:text-white transition-colors py-2">İzleme Listesi</a>

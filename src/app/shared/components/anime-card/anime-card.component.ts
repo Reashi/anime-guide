@@ -29,7 +29,7 @@ export class AnimeCardComponent {
     this.userListService.addToList(this.anime.id).subscribe({
       next: () => {
         // Show success message
-        console.log('Listeye eklendi');
+    
       },
       error: (error) => {
         console.error('Liste ekleme hatası:', error);
@@ -42,7 +42,7 @@ export class AnimeCardComponent {
     event.stopPropagation();
     
     // Implementation for favorite toggle
-    console.log('Favori durumu değiştirildi');
+    
   }
   
   getStatusBadgeClass(status: string): string {
@@ -100,9 +100,7 @@ export class AnimeCardComponent {
 
   getFormattedStartDate(): string {
     // Debug için console'da kontrol edelim
-    console.log('Anime title:', this.anime.title);
-    console.log('Anime startDate:', this.anime.startDate);
-    console.log('Anime seasonYear:', this.anime.seasonYear);
+    
     
     // Önce startDate'i kontrol et
     if (this.anime.startDate) {
@@ -127,7 +125,7 @@ export class AnimeCardComponent {
       return this.anime.seasonYear.toString();
     }
     
-    console.log('No date info for:', this.anime.title);
+    
     return '';
   }
 } 

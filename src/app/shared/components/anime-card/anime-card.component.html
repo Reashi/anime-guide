@@ -1,4 +1,4 @@
-<div class="group relative bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+<a [routerLink]="['/anime', anime.id]" class="group relative bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden h-full flex flex-col cursor-pointer block">
   <!-- Anime Poster -->
   <div class="relative aspect-anime-poster overflow-hidden">
     <img 
@@ -31,12 +31,12 @@
           <div class="flex space-x-2 mb-2">
             <button 
               (click)="addToList($event)"
-              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded-md transition-colors">
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded-md transition-colors z-10 relative">
               + Liste
             </button>
             <button 
               (click)="toggleFavorite($event)"
-              class="bg-red-600 hover:bg-red-700 text-white text-xs py-2 px-3 rounded-md transition-colors">
+              class="bg-red-600 hover:bg-red-700 text-white text-xs py-2 px-3 rounded-md transition-colors z-10 relative">
               ♥
             </button>
           </div>
@@ -55,40 +55,46 @@
   </div>
   
   <!-- Anime Info -->
-  <div class="p-4">
-    <h3 class="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-      <a [routerLink]="['/anime', anime.id]">
+  <div class="p-4 flex-1 flex flex-col justify-between">
+    <!-- Top Section: Title -->
+    <div>
+      <h3 class="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
         {{ anime.title }}
-      </a>
-    </h3>
-    
-    <!-- Meta Info -->
-    <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-      @if (anime.format) {
-        <div>{{ getFormatText(anime.format) }}</div>
-      }
-      @if (anime.episodes) {
-        <div>{{ anime.episodes }} bölüm</div>
-      }
-      @if (getFormattedStartDate()) {
-        <div>{{ getFormattedStartDate() }}</div>
-      }
+      </h3>
     </div>
     
-    <!-- Studios -->
-    @if (anime && anime.studios && anime.studios.length > 0) {
-      <div class="flex flex-wrap gap-1 mb-2">
-        @for (studio of anime.studios.slice(0, 2); track studio) {
-          <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-            {{ studio }}
-          </span>
+    <!-- Bottom Section: Meta Info and Studios -->
+    <div class="space-y-2">
+      <!-- Meta Info -->
+      <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400 min-h-[3.5rem]">
+        @if (anime.format) {
+          <div>{{ getFormatText(anime.format) }}</div>
         }
-        @if (anime.studios.length > 2) {
-          <span class="text-xs text-gray-500 dark:text-gray-400">
-            +{{ anime.studios.length - 2 }}
-          </span>
+        @if (anime.episodes) {
+          <div>{{ anime.episodes }} bölüm</div>
+        }
+        @if (getFormattedStartDate()) {
+          <div>{{ getFormattedStartDate() }}</div>
         }
       </div>
-    }
+      
+      <!-- Studios -->
+      <div class="min-h-[2rem]">
+        @if (anime && anime.studios && anime.studios.length > 0) {
+          <div class="flex flex-wrap gap-1">
+            @for (studio of anime.studios.slice(0, 2); track studio) {
+              <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                {{ studio }}
+              </span>
+            }
+            @if (anime.studios.length > 2) {
+              <span class="text-xs text-gray-500 dark:text-gray-400">
+                +{{ anime.studios.length - 2 }}
+              </span>
+            }
+          </div>
+        }
+      </div>
+    </div>
   </div>
-</div> 
+</a> 

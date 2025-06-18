@@ -26,7 +26,6 @@ export class AnilistService {
   constructor(private http: HttpClient) {}
 
   searchAnime(filters: SearchFilters, page: number = 1, perPage: number = 100): Observable<any> {
-    console.log('AniList Service - Arama Parametreleri:', { filters, page, perPage });
 
     const query = `
       query ($page: Int, $perPage: Int, $search: String, $genres: [String], $format: MediaFormat, $status: MediaStatus, $sort: [MediaSort], $startDateGreater: FuzzyDateInt, $startDateLesser: FuzzyDateInt) {
@@ -86,7 +85,7 @@ export class AnilistService {
       startDateLesser: filters.yearEnd ? parseInt(filters.yearEnd.toString() + '1231') : undefined
     };
 
-    console.log('AniList API İsteği:', { query, variables });
+
 
     const headers = new HttpHeaders({
       'Content-Type': 'application/json',
@@ -98,7 +97,7 @@ export class AnilistService {
       variables
     }, { headers }).pipe(
       map((response: any) => {
-        console.log('AniList API Ham Yanıt:', response);
+
 
         if (response.errors) {
           throw new Error(response.errors[0].message);
@@ -331,7 +330,7 @@ export class AnilistService {
     return seasonNames[season as keyof typeof seasonNames] || 'Bilinmeyen';
   }
 
-  getSeasonAnimes(season: string, year: number, page: number = 1, perPage: number = 24): Observable<{ media: Anime[], pageInfo: any }> {
+  getSeasonAnimes(season: string, year: number, page: number = 1, perPage: number = 50): Observable<{ media: Anime[], pageInfo: any }> {
     const query = `
       query {
         Page(page: ${page}, perPage: ${perPage}) {
@@ -435,18 +434,7 @@ export class AnilistService {
   }
 
   private makeRequest(query: string): Observable<any> {
-    console.log('Sending query:', query);
-    
-    return this.http.post(this.API_URL, { query }).pipe(
-      map(response => {
-        console.log('Full API Response:', response);
-        if ((response as any)?.data?.Page?.media) {
-          console.log('First media item:', (response as any).data.Page.media[0]);
-          console.log('First media startDate:', (response as any).data.Page.media[0]?.startDate);
-        }
-        return response;
-      })
-    );
+    return this.http.post(this.API_URL, { query });
   }
 
   private transformAnimeData(media: any[]): Anime[] {
