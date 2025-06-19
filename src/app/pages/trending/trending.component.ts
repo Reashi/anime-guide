@@ -1,24 +1,27 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed, HostListener, ElementRef, ViewChild, PLATFORM_ID, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject, signal, computed, HostListener, ElementRef, ViewChild, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormsModule, ReactiveFormsModule, FormControl, FormGroup, FormBuilder } from '@angular/forms';
 import { AnilistService, SearchFilters } from '../../core/services/anilist.service';
+import { SearchFilterService, SearchFormControls } from '../../core/services/search-filter.service';
 import { Anime } from '../../core/models/anime.model';
 import { AnimeCardComponent } from '../../shared/components/anime-card/anime-card.component';
 import { Subject, Subscription } from 'rxjs';
-import { finalize, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { FormBuilder, FormGroup, FormControl } from '@angular/forms';
 
 @Component({
   selector: 'app-trending',
   standalone: true,
-  imports: [CommonModule, AnimeCardComponent, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, AnimeCardComponent, ReactiveFormsModule],
   templateUrl: './trending.component.html',
   styleUrls: ['./trending.component.scss']
 })
-export class TrendingComponent implements OnInit, OnDestroy {
+export class TrendingComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('loadingTrigger') loadingTrigger!: ElementRef;
 
   private anilistService = inject(AnilistService);
+  private searchFilterService = inject(SearchFilterService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private searchSubject = new Subject<string>();
@@ -43,8 +46,15 @@ export class TrendingComponent implements OnInit, OnDestroy {
     hasNextPage: false
   });
   searchQuery = signal('');
-  totalResults = computed(() => this.animes().length);
+  totalTrendingAnimes = signal<number>(0); // Gerçek total sayısı
+  allTrendingAnimes = signal<Anime[]>([]); // Tüm animeler memory'de
+  currentDisplayCount = signal<number>(20); // Şu anda gösterilen sayı
 
+  // Search filter servisi ile yönetilecek
+  searchForm!: FormGroup;
+  searchControls!: SearchFormControls;
+  dropdownState = this.searchFilterService.createDropdownState();
+  
   // Form değişkenleri
   searchTerm = '';
   sortBy = '';
@@ -53,30 +63,15 @@ export class TrendingComponent implements OnInit, OnDestroy {
   selectedGenres: string[] = [];
   showFilters = false;
 
-  // Dropdown state
-  showSortDropdown = false;
-  showFiltersDropdown = false;
-
   // Seçenekler
-  sortOptions = this.anilistService.getSortOptions();
-  statusOptions = this.anilistService.getStatusOptions();
-  formatOptions = this.anilistService.getFormatOptions();
-  genreOptions = this.anilistService.getGenreOptions();
+  sortOptions = this.searchFilterService.sortOptions;
+  statusOptions = this.searchFilterService.statusOptions;
+  formatOptions = this.searchFilterService.formatOptions;
+  genreOptions = this.searchFilterService.genreOptions;
 
-  searchForm: FormGroup;
   currentPage = 1;
-  currentYear = new Date().getFullYear();
 
-  // Form Controls - public olarak tanımlanmalı
-  public searchControl = new FormControl('');
-  public genresControl = new FormControl<string[]>([]);
-  public formatControl = new FormControl<string | null>(null);
-  public statusControl = new FormControl<string | null>(null);
-  public sortControl = new FormControl('TRENDING_DESC');
-  public yearStartControl = new FormControl<number | null>(null);
-  public yearEndControl = new FormControl<number | null>(null);
-
-  // Trending specific - Time periods instead of seasons
+  // Trending specific - Time periods
   timePeriods = [
     { value: 'CURRENT_WEEK', label: 'Bu Hafta' },
     { value: 'CURRENT_MONTH', label: 'Bu Ay' },
@@ -87,114 +82,32 @@ export class TrendingComponent implements OnInit, OnDestroy {
   selectedTimePeriod = 'CURRENT_WEEK';
 
   constructor() {
-    this.searchForm = this.fb.group({
-      search: this.searchControl,
-      genres: this.genresControl,
-      format: this.formatControl,
-      status: this.statusControl,
-      sort: this.sortControl,
-      yearStart: this.yearStartControl,
-      yearEnd: this.yearEndControl
-    });
+    // Form oluştur (yıl filtreleri olmadan)
+    const formData = this.searchFilterService.createSearchForm({ includeYearFilters: false });
+    this.searchForm = formData.form;
+    this.searchControls = formData.controls;
+  }
+
+  @HostListener('document:keydown.enter', ['$event'])
+  onEnterKey(event: Event) {
+    if (document.activeElement?.id === 'searchInput') {
+      event.preventDefault();
+      this.resetSearch();
+    }
   }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: Event) {
     const target = event.target as HTMLElement;
-    
-    // Filtre dropdown'u dışına tıklanmışsa kapat
-    if (this.showFiltersDropdown && !target.closest('.filters-dropdown') && !target.closest('[data-dropdown="filters"]')) {
-      this.showFiltersDropdown = false;
-    }
-    
-    // Sıralama dropdown'u dışına tıklanmışsa kapat
-    if (this.showSortDropdown && !target.closest('.sort-dropdown') && !target.closest('[data-dropdown="sort"]')) {
-      this.showSortDropdown = false;
+    if (!target.closest('.relative')) {
+      this.closeAllDropdowns();
     }
   }
 
-  @HostListener('document:keydown.escape')
-  onEscapeKey() {
-    this.closeAllDropdowns();
-  }
-
-  // Dropdown Yönetimi
-  toggleSortDropdown(): void {
-    this.showSortDropdown = !this.showSortDropdown;
-    this.showFiltersDropdown = false;
-  }
-
-  toggleFiltersDropdown(): void {
-    this.showFiltersDropdown = !this.showFiltersDropdown;
-    this.showSortDropdown = false;
-  }
-
-  closeAllDropdowns(): void {
-    this.showSortDropdown = false;
-    this.showFiltersDropdown = false;
-  }
-
-  // Seçim Fonksiyonları
-  selectSort(sort: string): void {
-    this.sortControl.setValue(sort);
-    this.showSortDropdown = false;
-    this.loadTrendingAnimes();
-  }
-
-  // Label Getirme Fonksiyonları
-  getFormatLabel(format: string | null): string {
-    if (!format) {
-      return 'Tümü';
-    }
-    const formatLabels: { [key: string]: string } = {
-      'TV': 'TV',
-      'MOVIE': 'Film',
-      'OVA': 'OVA',
-      'ONA': 'ONA',
-      'SPECIAL': 'Özel'
-    };
-    return formatLabels[format] || format;
-  }
-
-  getStatusLabel(status: string | null): string {
-    if (!status) {
-      return 'Tümü';
-    }
-    const statusLabels: { [key: string]: string } = {
-      'FINISHED': 'Tamamlandı',
-      'RELEASING': 'Devam Ediyor',
-      'NOT_YET_RELEASED': 'Yayınlanmadı',
-      'CANCELLED': 'İptal Edildi'
-    };
-    return statusLabels[status] || status;
-  }
-
-  getSortLabel(sort: string | null): string {
-    if (!sort) {
-      return 'Trend (Azalan)';
-    }
-    const sortLabels: { [key: string]: string } = {
-      'POPULARITY_DESC': 'Popülerlik (Azalan)',
-      'POPULARITY': 'Popülerlik (Artan)',
-      'SCORE_DESC': 'Puan (Azalan)',
-      'SCORE': 'Puan (Artan)',
-      'TRENDING_DESC': 'Trend (Azalan)',
-      'TRENDING': 'Trend (Artan)'
-    };
-    return sortLabels[sort] || sort;
-  }
-
-  getYearOptions(): number[] {
-    const currentYear = new Date().getFullYear();
-    const startYear = 1960;
-    const years: number[] = [];
-    
-    // Gelecek yıl da dahil olmak üzere 
-    for (let year = currentYear + 1; year >= startYear; year--) {
-      years.push(year);
-    }
-    
-    return years;
+  // Time Period Selection
+  selectTimePeriod(timePeriod: string): void {
+    this.selectedTimePeriod = timePeriod;
+    this.resetSearch();
   }
 
   getTimePeriodLabel(timePeriod: string): string {
@@ -202,229 +115,345 @@ export class TrendingComponent implements OnInit, OnDestroy {
     return period ? period.label : timePeriod;
   }
 
-  // Aktif Filtre Kontrolü
+  // Dropdown Yönetimi
+  toggleSortDropdown(): void {
+    this.dropdownState.toggleSortDropdown();
+  }
+
+  toggleFiltersDropdown(): void {
+    this.dropdownState.toggleFiltersDropdown();
+  }
+
+  closeAllDropdowns(): void {
+    this.dropdownState.closeAllDropdowns();
+  }
+
+  // Seçim Fonksiyonları
+  selectSort(sort: string): void {
+    this.searchControls.sortControl.setValue(sort);
+    this.dropdownState.showSortDropdown.set(false);
+  }
+
+  // Label Getirme Fonksiyonları (Servisten)
+  getFormatLabel(format: string | null): string {
+    return this.searchFilterService.getFormatLabel(format);
+  }
+
+  getStatusLabel(status: string | null): string {
+    return this.searchFilterService.getStatusLabel(status);
+  }
+
+  getSortLabel(sort: string | null): string {
+    return this.searchFilterService.getSortLabel(sort);
+  }
+
+  getYearOptions(): number[] {
+    return this.searchFilterService.getYearOptions();
+  }
+
+  // Aktif Filtre Kontrolü (Servisten)
   hasActiveFilters(): boolean {
-    return !!(
-      this.formatControl.value ||
-      this.statusControl.value ||
-      this.genresControl.value?.length ||
-      this.yearStartControl.value ||
-      this.yearEndControl.value
-    );
+    return this.searchFilterService.hasActiveFilters(this.searchControls);
   }
 
   // Aktif filtre metni
   getActiveFiltersText(): string {
-    const activeCount = this.getActiveFiltersCount();
-    if (activeCount === 0) {
-      return 'Filtreler';
-    }
-    return `Filtreler (${activeCount})`;
+    return this.searchFilterService.getActiveFiltersText(this.searchControls);
   }
 
+  // Aktif filtre sayısı
   getActiveFiltersCount(): number {
-    let count = 0;
-    if (this.formatControl.value) count++;
-    if (this.statusControl.value) count++;
-    if (this.genresControl.value && this.genresControl.value.length > 0) count++;
-    if (this.yearStartControl.value) count++;
-    if (this.yearEndControl.value) count++;
-    return count;
+    return this.searchFilterService.getActiveFiltersCount(this.searchControls);
   }
 
-  isGenreSelected(genre: string): boolean {
-    const genres = this.genresControl.value || [];
-    return genres.includes(genre);
-  }
-
-  onGenreChange(event: Event, genre: string): void {
-    const checkbox = event.target as HTMLInputElement;
-    const currentGenres = this.genresControl.value || [];
-    
-    if (checkbox.checked) {
-      // Genre'yi ekle
-      if (!currentGenres.includes(genre)) {
-        const newGenres = [...currentGenres, genre];
-        this.genresControl.setValue(newGenres);
-      }
-    } else {
-      // Genre'yi çıkar
-      const newGenres = currentGenres.filter(g => g !== genre);
-      this.genresControl.setValue(newGenres);
-    }
-    
-    this.loadTrendingAnimes();
-  }
-
-  clearFilters(): void {
-    this.formatControl.setValue(null);
-    this.statusControl.setValue(null);
-    this.genresControl.setValue([]);
-    this.yearStartControl.setValue(null);
-    this.yearEndControl.setValue(null);
-    this.sortControl.setValue('TRENDING_DESC');
-    this.loadTrendingAnimes();
+  // Total count display için
+  getDisplayTotal(): number {
+    return Math.max(this.animes().length, this.totalTrendingAnimes());
   }
 
   ngOnInit(): void {
-    this.loadTrendingAnimes();
+    // Setup intersection observer for infinite scroll
+    this.setupIntersectionObserver();
+    
+    // Arama kutusunun değişikliklerini izle
+    const searchSub = this.searchControls.searchControl.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe((value) => {
+      this.searchQuery.set(value || '');
+      this.resetSearch();
+    });
 
-    // Arama kontrolünü dinle
-    const searchSubscription = this.searchControl.valueChanges
-      .pipe(
-        debounceTime(500),
-        distinctUntilChanged()
-      )
-      .subscribe(searchTerm => {
-        this.searchQuery.set(searchTerm || '');
-        this.filterAnimes();
-      });
+    this.subscriptions.push(searchSub);
 
-    // Form değişikliklerini dinle
-    this.subscriptions.push(
-      searchSubscription,
-      this.formatControl.valueChanges.subscribe(() => this.loadTrendingAnimes()),
-      this.statusControl.valueChanges.subscribe(() => this.loadTrendingAnimes()),
-      this.yearStartControl.valueChanges.subscribe(() => this.loadTrendingAnimes()),
-      this.yearEndControl.valueChanges.subscribe(() => this.loadTrendingAnimes())
-    );
+    // Form değişikliklerini izle
+    const formSub = this.searchForm.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.resetSearch();
+    });
+
+    this.subscriptions.push(formSub);
+
+    // İlk yükleme
+    this.initializeTrendingData();
+  }
+
+  ngAfterViewInit(): void {
+    // ViewChild hazır olduktan sonra intersection observer'ı başlat
+    setTimeout(() => {
+      if (this.loadingTrigger) {
+        this.startInfiniteScroll();
+      }
+    }, 100);
   }
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
-    if (this.observer && isPlatformBrowser(this.platformId)) {
-      this.observer.disconnect();
+    this.observer?.disconnect();
+  }
+
+  private setupIntersectionObserver(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !this.loading()) {
+          this.loadMoreResults();
+        }
+      },
+      { 
+        threshold: 0.1,
+        rootMargin: '100px'
+      }
+    );
+  }
+
+  private initializeTrendingData(): void {
+    this.loadAllTrendingAnimes();
+  }
+
+  private resetSearch(): void {
+    this.animes.set([]);
+    this.allTrendingAnimes.set([]);
+    this.totalTrendingAnimes.set(0);
+    this.currentDisplayCount.set(20);
+    this.observer?.disconnect();
+    this.loadAllTrendingAnimes();
+  }
+
+  private loadAllTrendingAnimes(): void {
+    if (this.isLoading) return;
+    
+    this.isLoading = true;
+    this.loading.set(true);
+
+    const filters = this.buildSearchFilters();
+    
+    // Recursive olarak tüm sayfaları yükle
+    this.loadAllPages(filters, [], 1);
+  }
+
+  private loadAllPages(filters: SearchFilters, allAnimes: Anime[], page: number = 1): void {
+    this.anilistService.searchAnime(filters, page, 50).subscribe({
+      next: (response) => {
+        const newAnimes = response.media || [];
+        const combinedAnimes = [...allAnimes, ...newAnimes];
+        
+        // Duplicate kontrolü
+        const uniqueAnimes = combinedAnimes.filter((anime, index, self) => 
+          index === self.findIndex(a => a.id === anime.id)
+        );
+
+        if (response.pageInfo?.hasNextPage && page < 20) { // Max 20 sayfa (1000 anime)
+          // Rekursif olarak bir sonraki sayfayı yükle
+          setTimeout(() => {
+            this.loadAllPages(filters, uniqueAnimes, page + 1);
+          }, 100); // Rate limiting için delay
+        } else {
+          // Tüm animeler yüklendi
+          this.allTrendingAnimes.set(uniqueAnimes);
+          this.totalTrendingAnimes.set(uniqueAnimes.length);
+          
+          // İlk 20 animeyi göster
+          this.showFirstAnimes();
+          
+          this.isLoading = false;
+          this.loading.set(false);
+
+          // Infinite scroll'u başlat
+          setTimeout(() => this.startInfiniteScroll(), 100);
+        }
+      },
+      error: (error) => {
+        console.error('Trend animeler yüklenemedi:', error);
+        this.isLoading = false;
+        this.loading.set(false);
+      }
+    });
+  }
+
+  private showFirstAnimes(): void {
+    const allAnimes = this.allTrendingAnimes();
+    if (allAnimes.length > 0) {
+      const firstAnimes = allAnimes.slice(0, 20);
+      this.animes.set(firstAnimes);
+      this.currentDisplayCount.set(firstAnimes.length);
     }
   }
 
-  selectTimePeriod(timePeriod: string): void {
-    this.selectedTimePeriod = timePeriod;
-    this.loadTrendingAnimes();
+  private startInfiniteScroll(): void {
+    if (this.loadingTrigger && this.observer) {
+      this.observer.observe(this.loadingTrigger.nativeElement);
+    }
+  }
+
+  private loadMoreResults(): void {
+    const allAnimes = this.allTrendingAnimes();
+    const currentAnimes = this.animes();
+    const remainingCount = allAnimes.length - currentAnimes.length;
+    
+    if (remainingCount > 0) {
+      const nextBatch = allAnimes.slice(currentAnimes.length, currentAnimes.length + 20);
+      const updatedAnimes = [...currentAnimes, ...nextBatch];
+      
+      this.animes.set(updatedAnimes);
+      this.currentDisplayCount.set(updatedAnimes.length);
+      
+      // Eğer tüm animeler gösterildi ise observer'ı durdur
+      if (updatedAnimes.length >= allAnimes.length) {
+        this.observer?.disconnect();
+      }
+    }
+  }
+
+  isStatusSelected(status: string): boolean {
+    return this.searchControls.statusControl.value === status;
+  }
+
+  isFormatSelected(format: string): boolean {
+    return this.searchControls.formatControl.value === format;
+  }
+
+  isGenreSelected(genre: string): boolean {
+    return this.searchControls.genresControl.value?.includes(genre) || false;
+  }
+
+  toggleStatus(status: string): void {
+    const currentValue = this.searchControls.statusControl.value;
+    if (currentValue === status) {
+      this.searchControls.statusControl.setValue(null);
+    } else {
+      this.searchControls.statusControl.setValue(status);
+    }
+  }
+
+  toggleFormat(format: string): void {
+    const currentValue = this.searchControls.formatControl.value;
+    if (currentValue === format) {
+      this.searchControls.formatControl.setValue(null);
+    } else {
+      this.searchControls.formatControl.setValue(format);
+    }
+  }
+
+  onGenreChange(event: Event, genre: string): void {
+    const target = event.target as HTMLInputElement;
+    const currentGenres = this.searchControls.genresControl.value || [];
+    
+    if (target.checked) {
+      this.searchControls.genresControl.setValue([...currentGenres, genre]);
+    } else {
+      this.searchControls.genresControl.setValue(currentGenres.filter(g => g !== genre));
+    }
+  }
+
+  getSelectedFiltersCount(): number {
+    return this.searchFilterService.getActiveFiltersCount(this.searchControls);
+  }
+
+  getSelectedFiltersText(): string {
+    return this.searchFilterService.getActiveFiltersText(this.searchControls);
+  }
+
+  onSearchChange(): void {
+    this.resetSearch();
+  }
+
+  onSortChange(): void {
+    this.resetSearch();
+  }
+
+  clearFilters(): void {
+    this.searchControls.searchControl.setValue('');
+    this.searchControls.genresControl.setValue([]);
+    this.searchControls.formatControl.setValue(null);
+    this.searchControls.statusControl.setValue(null);
+    this.resetSearch();
+  }
+
+  private updateUrlAndSearch(): void {
+    // URL parametrelerini güncelle (isteğe bağlı)
+    this.resetSearch();
+  }
+
+  private buildSearchFilters(): SearchFilters {
+    const search = this.searchControls.searchControl.value?.trim() || undefined;
+    const genres = this.searchControls.genresControl.value?.length ? this.searchControls.genresControl.value : undefined;
+    const format = this.searchControls.formatControl.value || undefined;
+    const status = this.searchControls.statusControl.value || undefined;
+    const sort = this.searchControls.sortControl.value ? [this.searchControls.sortControl.value] : ['TRENDING_DESC'];
+    
+    // Build year filter based on selected time period
+    let yearStart: number | undefined;
+    let yearEnd: number | undefined;
+    
+    const currentYear = new Date().getFullYear();
+    const currentDate = new Date();
+    
+    switch (this.selectedTimePeriod) {
+      case 'CURRENT_WEEK':
+        // Last week's date
+        const weekAgo = new Date(currentDate);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        yearStart = weekAgo.getFullYear();
+        break;
+      case 'CURRENT_MONTH':
+        // Current month
+        yearStart = currentYear;
+        break;
+      case 'LAST_3_MONTHS':
+        // Last 3 months
+        const threeMonthsAgo = new Date(currentDate);
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        yearStart = threeMonthsAgo.getFullYear();
+        break;
+      case 'LAST_6_MONTHS':
+        // Last 6 months
+        const sixMonthsAgo = new Date(currentDate);
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        yearStart = sixMonthsAgo.getFullYear();
+        break;
+      case 'CURRENT_YEAR':
+        // Current year
+        yearStart = currentYear;
+        yearEnd = currentYear;
+        break;
+    }
+
+    return {
+      search,
+      genres,
+      format,
+      status,
+      sort,
+      yearStart,
+      yearEnd
+    };
   }
 
   trackByAnimeId(index: number, anime: Anime): number {
     return anime.id;
-  }
-
-  clearSearch(): void {
-    this.searchControl.setValue('');
-    this.searchQuery.set('');
-    this.filterAnimes();
-  }
-
-  private allAnimes: Anime[] = []; // Tüm animeler (filtrelenmemiş)
-  private isSearching = false;
-
-  private filterAnimes(): void {
-    if (!this.searchQuery().trim()) {
-      // Arama yoksa tüm animeleri göster
-      this.animes.set(this.allAnimes);
-      this.isSearching = false;
-      return;
-    }
-
-    this.isSearching = true;
-    const searchTerm = this.searchQuery().toLowerCase().trim();
-    
-    const filteredAnimes = this.allAnimes.filter(anime => {
-      // Anime başlığında arama yap
-      const titleMatch = anime.title.toLowerCase().includes(searchTerm) ||
-                        anime.englishTitle?.toLowerCase().includes(searchTerm) ||
-                        anime.nativeTitle?.toLowerCase().includes(searchTerm);
-      
-      // Genre'larda arama yap
-      const genreMatch = anime.genres.some(genre => 
-        genre.toLowerCase().includes(searchTerm)
-      );
-      
-      // Studio'larda arama yap
-      const studioMatch = anime.studios.some(studio => 
-        studio.toLowerCase().includes(searchTerm)
-      );
-      
-      return titleMatch || genreMatch || studioMatch;
-    });
-
-    this.animes.set(filteredAnimes);
-    this.pageInfo.set({
-      total: filteredAnimes.length,
-      currentPage: 1,
-      lastPage: 1,
-      hasNextPage: false
-    });
-  }
-
-  private loadTrendingAnimes(): void {
-    this.loading.set(true);
-    
-    // Trending animeler için API çağrısı
-    this.anilistService.getTrendingAnime(1, 50).subscribe({
-      next: (response: any) => {
-        let filteredAnimes = response.media || [];
-        
-        // Client-side filtreleme uygula
-        if (this.formatControl.value) {
-          filteredAnimes = filteredAnimes.filter((anime: Anime) => anime.format === this.formatControl.value);
-        }
-        
-        if (this.statusControl.value) {
-          filteredAnimes = filteredAnimes.filter((anime: Anime) => anime.status === this.statusControl.value);
-        }
-        
-        if (this.genresControl.value && this.genresControl.value.length > 0) {
-          filteredAnimes = filteredAnimes.filter((anime: Anime) => 
-            this.genresControl.value!.some(genre => anime.genres.includes(genre))
-          );
-        }
-        
-        if (this.yearStartControl.value) {
-          filteredAnimes = filteredAnimes.filter((anime: Anime) => 
-            anime.startDate?.year && anime.startDate.year >= this.yearStartControl.value!
-          );
-        }
-        
-        if (this.yearEndControl.value) {
-          filteredAnimes = filteredAnimes.filter((anime: Anime) => 
-            anime.startDate?.year && anime.startDate.year <= this.yearEndControl.value!
-          );
-        }
-        
-        // Sıralama uygula
-        const sortValue = this.sortControl.value || 'TRENDING_DESC';
-        if (sortValue === 'SCORE_DESC') {
-          filteredAnimes.sort((a: Anime, b: Anime) => (b.averageScore || 0) - (a.averageScore || 0));
-        } else if (sortValue === 'SCORE') {
-          filteredAnimes.sort((a: Anime, b: Anime) => (a.averageScore || 0) - (b.averageScore || 0));
-        } else if (sortValue === 'POPULARITY') {
-          filteredAnimes.sort((a: Anime, b: Anime) => (a.popularity || 0) - (b.popularity || 0));
-        } else if (sortValue === 'POPULARITY_DESC') {
-          filteredAnimes.sort((a: Anime, b: Anime) => (b.popularity || 0) - (a.popularity || 0));
-        } else {
-          // TRENDING_DESC (default) - already sorted by API
-        }
-        
-        // Orijinal animeleri kaydet
-        this.allAnimes = filteredAnimes;
-        
-        // Arama varsa filtrele, yoksa tümünü göster
-        if (this.searchQuery().trim()) {
-          this.filterAnimes();
-        } else {
-          this.animes.set(filteredAnimes);
-          this.pageInfo.set({
-            total: filteredAnimes.length,
-            currentPage: 1,
-            lastPage: 1,
-            hasNextPage: false
-          });
-        }
-        
-        this.loading.set(false);
-      },
-      error: (error: any) => {
-        console.error('Error loading trending anime:', error);
-        this.loading.set(false);
-      }
-    });
   }
 } 

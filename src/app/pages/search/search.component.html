@@ -2,7 +2,7 @@
   <div class="container mx-auto px-4 py-8">
     <!-- Arama Başlığı -->
     <div class="container mx-auto px-4 py-8">
-      <h1 class="text-2xl font-bold mb-4">Arama Sonuçları: "{{ searchControl.value || '' }}"</h1>
+      <h1 class="text-2xl font-bold mb-4">Arama Sonuçları: "{{ searchControls.searchControl.value || '' }}"</h1>
       <p class="text-gray-600 mb-8">{{ animes().length }} sonuç bulundu</p>
 
       <!-- Genişletilmiş Arama Formu -->
@@ -14,7 +14,7 @@
             <input
               id="searchInput"
               type="text"
-              [formControl]="searchControl"
+              [formControl]="searchControls.searchControl"
               placeholder="Örn: isekai, naruto..."
               class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg"
               (keyup.enter)="searchAnime()"
@@ -34,12 +34,12 @@
               <span class="text-sm">
                 {{ getActiveFiltersText() }}
               </span>
-              <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="showFiltersDropdown" viewBox="0 0 24 24" fill="none">
+              <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="dropdownState.showFiltersDropdown()" viewBox="0 0 24 24" fill="none">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
             </button>
             
-            <div *ngIf="showFiltersDropdown" class="absolute z-50 w-96 md:w-[1000px] mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-hidden left-0 md:left-auto">
+            <div *ngIf="dropdownState.showFiltersDropdown()" class="absolute z-50 w-96 md:w-[1000px] mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-hidden left-0 md:left-auto">
               <div class="p-3">
                 <!-- Ana Grid Container - Yan Yana Dizim -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -71,7 +71,7 @@
                         <input
                           type="radio"
                           [value]="null"
-                          [formControl]="formatControl"
+                          [formControl]="searchControls.formatControl"
                           class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                         />
                         <span class="text-xs">Tümü</span>
@@ -80,7 +80,7 @@
                         <input
                           type="radio"
                           value="TV"
-                          [formControl]="formatControl"
+                          [formControl]="searchControls.formatControl"
                           class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                         />
                         <span class="text-xs">TV</span>
@@ -89,7 +89,7 @@
                         <input
                           type="radio"
                           value="MOVIE"
-                          [formControl]="formatControl"
+                          [formControl]="searchControls.formatControl"
                           class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                         />
                         <span class="text-xs">Film</span>
@@ -98,7 +98,7 @@
                         <input
                           type="radio"
                           value="OVA"
-                          [formControl]="formatControl"
+                          [formControl]="searchControls.formatControl"
                           class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                         />
                         <span class="text-xs">OVA</span>
@@ -107,7 +107,7 @@
                         <input
                           type="radio"
                           value="ONA"
-                          [formControl]="formatControl"
+                          [formControl]="searchControls.formatControl"
                           class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                         />
                         <span class="text-xs">ONA</span>
@@ -116,7 +116,7 @@
                         <input
                           type="radio"
                           value="SPECIAL"
-                          [formControl]="formatControl"
+                          [formControl]="searchControls.formatControl"
                           class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                         />
                         <span class="text-xs">Özel</span>
@@ -132,7 +132,7 @@
                         <input
                           type="radio"
                           [value]="null"
-                          [formControl]="statusControl"
+                          [formControl]="searchControls.statusControl"
                           class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                         />
                         <span class="text-xs">Tümü</span>
@@ -141,7 +141,7 @@
                         <input
                           type="radio"
                           value="FINISHED"
-                          [formControl]="statusControl"
+                          [formControl]="searchControls.statusControl"
                           class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                         />
                         <span class="text-xs">Tamamlandı</span>
@@ -150,7 +150,7 @@
                         <input
                           type="radio"
                           value="RELEASING"
-                          [formControl]="statusControl"
+                          [formControl]="searchControls.statusControl"
                           class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                         />
                         <span class="text-xs">Devam Ediyor</span>
@@ -159,7 +159,7 @@
                         <input
                           type="radio"
                           value="NOT_YET_RELEASED"
-                          [formControl]="statusControl"
+                          [formControl]="searchControls.statusControl"
                           class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                         />
                         <span class="text-xs">Yayınlanmadı</span>
@@ -168,7 +168,7 @@
                         <input
                           type="radio"
                           value="CANCELLED"
-                          [formControl]="statusControl"
+                          [formControl]="searchControls.statusControl"
                           class="form-radio h-3 w-3 text-purple-600 bg-gray-500 border-gray-400 focus:ring-purple-500 flex-shrink-0"
                         />
                         <span class="text-xs">İptal Edildi</span>
@@ -183,7 +183,8 @@
                       <div>
                         <label class="block text-xs text-gray-400 mb-1">Başlangıç</label>
                         <select
-                          [formControl]="yearStartControl"
+                          *ngIf="searchControls.yearStartControl"
+                          [formControl]="searchControls.yearStartControl"
                           class="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
                         >
                           <option value="">Tümü</option>
@@ -195,7 +196,8 @@
                       <div>
                         <label class="block text-xs text-gray-400 mb-1">Bitiş</label>
                         <select
-                          [formControl]="yearEndControl"
+                          *ngIf="searchControls.yearEndControl"
+                          [formControl]="searchControls.yearEndControl"
                           class="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
                         >
                           <option value="">Tümü</option>
@@ -231,20 +233,20 @@
               class="flex items-center justify-between px-4 py-2 bg-purple-600 border border-purple-500 rounded-lg text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400 min-w-[160px]"
             >
               <span class="text-sm">
-                {{ getSortLabel(sortControl.value) }}
+                {{ getSortLabel(searchControls.sortControl.value) }}
               </span>
-              <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="showSortDropdown" viewBox="0 0 24 24" fill="none">
+              <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="dropdownState.showSortDropdown()" viewBox="0 0 24 24" fill="none">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
             </button>
             
-            <div *ngIf="showSortDropdown" class="absolute z-50 w-full mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
+            <div *ngIf="dropdownState.showSortDropdown()" class="absolute z-50 w-full mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
               <div class="py-1">
                 <button
                   type="button"
                   (click)="selectSort('POPULARITY_DESC')"
                   class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
-                  [class.bg-gray-600]="sortControl.value === 'POPULARITY_DESC'"
+                  [class.bg-gray-600]="searchControls.sortControl.value === 'POPULARITY_DESC'"
                 >
                   Popülerlik (Azalan)
                 </button>
@@ -252,7 +254,7 @@
                   type="button"
                   (click)="selectSort('POPULARITY')"
                   class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
-                  [class.bg-gray-600]="sortControl.value === 'POPULARITY'"
+                  [class.bg-gray-600]="searchControls.sortControl.value === 'POPULARITY'"
                 >
                   Popülerlik (Artan)
                 </button>
@@ -260,7 +262,7 @@
                   type="button"
                   (click)="selectSort('SCORE_DESC')"
                   class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
-                  [class.bg-gray-600]="sortControl.value === 'SCORE_DESC'"
+                  [class.bg-gray-600]="searchControls.sortControl.value === 'SCORE_DESC'"
                 >
                   Puan (Azalan)
                 </button>
@@ -268,7 +270,7 @@
                   type="button"
                   (click)="selectSort('SCORE')"
                   class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
-                  [class.bg-gray-600]="sortControl.value === 'SCORE'"
+                  [class.bg-gray-600]="searchControls.sortControl.value === 'SCORE'"
                 >
                   Puan (Artan)
                 </button>
@@ -276,7 +278,7 @@
                   type="button"
                   (click)="selectSort('TRENDING_DESC')"
                   class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
-                  [class.bg-gray-600]="sortControl.value === 'TRENDING_DESC'"
+                  [class.bg-gray-600]="searchControls.sortControl.value === 'TRENDING_DESC'"
                 >
                   Trend (Azalan)
                 </button>
@@ -284,7 +286,7 @@
                   type="button"
                   (click)="selectSort('TRENDING')"
                   class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600"
-                  [class.bg-gray-600]="sortControl.value === 'TRENDING'"
+                  [class.bg-gray-600]="searchControls.sortControl.value === 'TRENDING'"
                 >
                   Trend (Artan)
                 </button>

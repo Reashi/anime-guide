@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { isPlatformBrowser } from '@angular/common';
 import { Observable } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -23,12 +24,28 @@ export interface SearchFilters {
 export class AnilistService {
   private readonly API_URL = 'https://graphql.anilist.co';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {}
 
   searchAnime(filters: SearchFilters, page: number = 1, perPage: number = 100): Observable<any> {
+    // SSR sırasında boş response döndür
+    if (!isPlatformBrowser(this.platformId)) {
+      return of({
+        media: [],
+        pageInfo: {
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage
+        }
+      });
+    }
 
     const query = `
-      query ($page: Int, $perPage: Int, $search: String, $genres: [String], $format: MediaFormat, $status: MediaStatus, $sort: [MediaSort], $startDateGreater: FuzzyDateInt, $startDateLesser: FuzzyDateInt) {
+      query ($page: Int, $perPage: Int, $search: String, $genres: [String], $format: MediaFormat, $status: MediaStatus, $sort: [MediaSort], $startDateGreater: FuzzyDateInt, $startDateLesser: FuzzyDateInt, $season: MediaSeason, $seasonYear: Int) {
         Page(page: $page, perPage: $perPage) {
           pageInfo {
             total
@@ -37,7 +54,7 @@ export class AnilistService {
             hasNextPage
             perPage
           }
-          media(search: $search, genre_in: $genres, format: $format, status: $status, sort: $sort, type: ANIME, startDate_greater: $startDateGreater, startDate_lesser: $startDateLesser) {
+          media(search: $search, genre_in: $genres, format: $format, status: $status, sort: $sort, type: ANIME, startDate_greater: $startDateGreater, startDate_lesser: $startDateLesser, season: $season, seasonYear: $seasonYear) {
             id
             title {
               romaji
@@ -82,7 +99,9 @@ export class AnilistService {
       status: filters.status || undefined,
       sort: filters.sort || ['POPULARITY_DESC'],
       startDateGreater: filters.yearStart ? parseInt(filters.yearStart.toString() + '0101') : undefined,
-      startDateLesser: filters.yearEnd ? parseInt(filters.yearEnd.toString() + '1231') : undefined
+      startDateLesser: filters.yearEnd ? parseInt(filters.yearEnd.toString() + '1231') : undefined,
+      season: filters.season,  // undefined yerine direkt season gönder
+      seasonYear: filters.year  // undefined yerine direkt year gönder
     };
 
 
@@ -97,68 +116,18 @@ export class AnilistService {
       variables
     }, { headers }).pipe(
       map((response: any) => {
-
-
         if (response.errors) {
           throw new Error(response.errors[0].message);
         }
 
-        const media = response.data.Page.media;
-        const searchTerm = filters.search?.toLowerCase() || '';
+        const media = response.data.Page.media || [];
+        const pageInfo = response.data.Page.pageInfo || {};
 
-        // Sonuçları filtrele ve sırala
-        const filteredMedia = media
-          .map((item: any) => {
-            // Tüm başlıkları ve alternatif isimleri bir dizide topla
-            const titles = [
-              item.title.romaji?.toLowerCase(),
-              item.title.english?.toLowerCase(),
-              item.title.native?.toLowerCase(),
-              ...(item.synonyms?.map((s: string) => s.toLowerCase()) || [])
-            ].filter(Boolean);
-
-            // Benzerlik puanı hesapla
-            let similarityScore = 0;
-            if (searchTerm) {
-              titles.forEach(title => {
-                // Tam eşleşme
-                if (title === searchTerm) similarityScore = 100;
-                // Başlangıç eşleşmesi
-                else if (title.startsWith(searchTerm)) similarityScore = Math.max(similarityScore, 80);
-                // Kelime başlangıcı eşleşmesi
-                else if (title.split(' ').some((word: string) => word.startsWith(searchTerm))) 
-                  similarityScore = Math.max(similarityScore, 60);
-                // İçinde geçme
-                else if (title.includes(searchTerm)) similarityScore = Math.max(similarityScore, 40);
-                // Kısmi eşleşme (en az 2 karakter)
-                else if (searchTerm.length >= 2 && title.includes(searchTerm.substring(0, 2)))
-                  similarityScore = Math.max(similarityScore, 20);
-              });
-            }
-
-            return {
-              ...this.transformSingleAnime(item),
-              similarityScore
-            };
-          })
-          .filter((item: any) => !searchTerm || item.similarityScore > 0)
-          .sort((a: any, b: any) => {
-            // Önce benzerlik puanına göre sırala
-            if (a.similarityScore !== b.similarityScore) {
-              return b.similarityScore - a.similarityScore;
-            }
-            // Benzerlik puanları eşitse popülerliğe göre sırala
-            return b.popularity - a.popularity;
-          });
-
-        // Sayfalama bilgilerini güncelle
-        const pageInfo = response.data.Page.pageInfo;
-        pageInfo.total = filteredMedia.length; // Filtrelenmiş sonuç sayısı
-        pageInfo.lastPage = Math.ceil(pageInfo.total / perPage);
-        pageInfo.hasNextPage = page < pageInfo.lastPage;
+        // Transform edilmiş anime verileri
+        const transformedMedia = media.map((item: any) => this.transformSingleAnime(item));
 
         return {
-          media: filteredMedia,
+          media: transformedMedia,
           pageInfo: pageInfo
         };
       }),
@@ -331,6 +300,20 @@ export class AnilistService {
   }
 
   getSeasonAnimes(season: string, year: number, page: number = 1, perPage: number = 50): Observable<{ media: Anime[], pageInfo: any }> {
+    // SSR sırasında boş response döndür
+    if (!isPlatformBrowser(this.platformId)) {
+      return of({
+        media: [],
+        pageInfo: {
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage
+        }
+      });
+    }
+
     const query = `
       query {
         Page(page: ${page}, perPage: ${perPage}) {
@@ -434,6 +417,23 @@ export class AnilistService {
   }
 
   private makeRequest(query: string): Observable<any> {
+    // SSR sırasında boş response döndür
+    if (!isPlatformBrowser(this.platformId)) {
+      return of({
+        data: {
+          Page: {
+            media: [],
+            pageInfo: {
+              total: 0,
+              currentPage: 1,
+              lastPage: 1,
+              hasNextPage: false
+            }
+          }
+        }
+      });
+    }
+
     return this.http.post(this.API_URL, { query });
   }
 

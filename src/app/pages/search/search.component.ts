@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed, HostListener, ElementRef, ViewChild, PLATFORM_ID, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, HostListener, ElementRef, ViewChild, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AnilistService, SearchFilters } from '../../core/services/anilist.service';
+import { SearchFilterService, SearchFormControls } from '../../core/services/search-filter.service';
 import { Anime } from '../../core/models/anime.model';
 import { AnimeCardComponent } from '../../shared/components/anime-card/anime-card.component';
 import { Subject, Subscription } from 'rxjs';
@@ -20,6 +21,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   @ViewChild('loadingTrigger') loadingTrigger!: ElementRef;
 
   private anilistService = inject(AnilistService);
+  private searchFilterService = inject(SearchFilterService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private searchSubject = new Subject<string>();
@@ -46,6 +48,11 @@ export class SearchComponent implements OnInit, OnDestroy {
   searchQuery = signal('');
   totalResults = computed(() => this.pageInfo().total);
 
+  // Search filter servisi ile yönetilecek
+  searchForm!: FormGroup;
+  searchControls!: SearchFormControls;
+  dropdownState = this.searchFilterService.createDropdownState();
+  
   // Form değişkenleri
   searchTerm = '';
   sortBy = '';
@@ -54,39 +61,20 @@ export class SearchComponent implements OnInit, OnDestroy {
   selectedGenres: string[] = [];
   showFilters = false;
 
-  // Dropdown state
-  showSortDropdown = false;
-  showFiltersDropdown = false;
-
   // Seçenekler
-  sortOptions = this.anilistService.getSortOptions();
-  statusOptions = this.anilistService.getStatusOptions();
-  formatOptions = this.anilistService.getFormatOptions();
-  genreOptions = this.anilistService.getGenreOptions();
+  sortOptions = this.searchFilterService.sortOptions;
+  statusOptions = this.searchFilterService.statusOptions;
+  formatOptions = this.searchFilterService.formatOptions;
+  genreOptions = this.searchFilterService.genreOptions;
 
-  searchForm: FormGroup;
   currentPage = 1;
   currentYear = new Date().getFullYear();
 
-  // Form Controls - public olarak tanımlanmalı
-  public searchControl = new FormControl('');
-  public genresControl = new FormControl<string[]>([]);
-  public formatControl = new FormControl<string | null>(null);
-  public statusControl = new FormControl<string | null>(null);
-  public sortControl = new FormControl('POPULARITY_DESC');
-  public yearStartControl = new FormControl<number | null>(null);
-  public yearEndControl = new FormControl<number | null>(null);
-
   constructor() {
-    this.searchForm = this.fb.group({
-      search: this.searchControl,
-      genres: this.genresControl,
-      format: this.formatControl,
-      status: this.statusControl,
-      sort: this.sortControl,
-      yearStart: this.yearStartControl,
-      yearEnd: this.yearEndControl
-    });
+    // Tarih filtresi ile form oluştur (search sayfası için)
+    const formData = this.searchFilterService.createSearchForm({ includeYearFilters: true });
+    this.searchForm = formData.form;
+    this.searchControls = formData.controls;
   }
 
   @HostListener('document:keydown.enter', ['$event'])
@@ -107,157 +95,103 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   // Dropdown Yönetimi
   toggleSortDropdown(): void {
-    this.showSortDropdown = !this.showSortDropdown;
-    this.showFiltersDropdown = false;
+    this.dropdownState.toggleSortDropdown();
   }
 
   toggleFiltersDropdown(): void {
-    this.showFiltersDropdown = !this.showFiltersDropdown;
-    this.showSortDropdown = false;
+    this.dropdownState.toggleFiltersDropdown();
   }
 
   closeAllDropdowns(): void {
-    this.showSortDropdown = false;
-    this.showFiltersDropdown = false;
+    this.dropdownState.closeAllDropdowns();
   }
 
   // Seçim Fonksiyonları
   selectSort(sort: string): void {
-    this.sortControl.setValue(sort);
-    this.showSortDropdown = false;
+    this.searchControls.sortControl.setValue(sort);
+    this.dropdownState.showSortDropdown.set(false);
   }
 
-  // Label Getirme Fonksiyonları
+  // Label Getirme Fonksiyonları (Servisten)
   getFormatLabel(format: string | null): string {
-    if (!format) {
-      return 'Tümü';
-    }
-    const formatLabels: { [key: string]: string } = {
-      'TV': 'TV',
-      'MOVIE': 'Film',
-      'OVA': 'OVA',
-      'ONA': 'ONA',
-      'SPECIAL': 'Özel'
-    };
-    return formatLabels[format] || format;
+    return this.searchFilterService.getFormatLabel(format);
   }
 
   getStatusLabel(status: string | null): string {
-    if (!status) {
-      return 'Tümü';
-    }
-    const statusLabels: { [key: string]: string } = {
-      'FINISHED': 'Tamamlandı',
-      'RELEASING': 'Devam Ediyor',
-      'NOT_YET_RELEASED': 'Yayınlanmadı',
-      'CANCELLED': 'İptal Edildi'
-    };
-    return statusLabels[status] || status;
+    return this.searchFilterService.getStatusLabel(status);
   }
 
   getSortLabel(sort: string | null): string {
-    if (!sort) {
-      return 'Popülerlik (Azalan)';
-    }
-    const sortLabels: { [key: string]: string } = {
-      'POPULARITY_DESC': 'Popülerlik (Azalan)',
-      'POPULARITY': 'Popülerlik (Artan)',
-      'SCORE_DESC': 'Puan (Azalan)',
-      'SCORE': 'Puan (Artan)',
-      'TRENDING_DESC': 'Trend (Azalan)',
-      'TRENDING': 'Trend (Artan)'
-    };
-    return sortLabels[sort] || sort;
+    return this.searchFilterService.getSortLabel(sort);
   }
 
   getYearOptions(): number[] {
-    const currentYear = new Date().getFullYear();
-    const startYear = 1960;
-    const years: number[] = [];
-    
-    // Gelecek yıl da dahil olmak üzere 
-    for (let year = currentYear + 1; year >= startYear; year--) {
-      years.push(year);
-    }
-    
-    return years;
+    return this.searchFilterService.getYearOptions();
   }
 
-  // Aktif Filtre Kontrolü
+  // Aktif Filtre Kontrolü (Servisten)
   hasActiveFilters(): boolean {
-    return !!(
-      this.formatControl.value ||
-      this.statusControl.value ||
-      this.genresControl.value?.length ||
-      this.yearStartControl.value ||
-      this.yearEndControl.value
-    );
+    return this.searchFilterService.hasActiveFilters(this.searchControls);
   }
 
   // Aktif filtre metni
   getActiveFiltersText(): string {
-    const activeCount = this.getActiveFiltersCount();
-    if (activeCount === 0) {
-      return 'Filtreler';
-    }
-    return `Filtreler (${activeCount})`;
+    return this.searchFilterService.getActiveFiltersText(this.searchControls);
   }
 
   // Aktif filtre sayısı
   getActiveFiltersCount(): number {
-    let count = 0;
-    if (this.formatControl.value) count++;
-    if (this.statusControl.value) count++;
-    if (this.genresControl.value?.length) count += this.genresControl.value.length;
-    if (this.yearStartControl.value) count++;
-    if (this.yearEndControl.value) count++;
-    return count;
+    return this.searchFilterService.getActiveFiltersCount(this.searchControls);
   }
 
   ngOnInit(): void {
     // Arama kutusunun değişikliklerini izle
-    const searchSubscription = this.searchControl.valueChanges
+    const searchSubscription = this.searchControls.searchControl.valueChanges
       .pipe(
         debounceTime(500),
         distinctUntilChanged()
       )
-      .subscribe(searchTerm => {
+      .subscribe((searchTerm: string | null) => {
         this.resetSearch();
       });
 
     this.subscriptions.push(searchSubscription);
 
     // Format değişikliklerini izle
-    const formatSubscription = this.formatControl.valueChanges.subscribe(() => {
+    const formatSubscription = this.searchControls.formatControl.valueChanges.subscribe(() => {
       this.resetSearch();
     });
 
     this.subscriptions.push(formatSubscription);
 
     // Status değişikliklerini izle
-    const statusSubscription = this.statusControl.valueChanges.subscribe(() => {
+    const statusSubscription = this.searchControls.statusControl.valueChanges.subscribe(() => {
       this.resetSearch();
     });
 
     this.subscriptions.push(statusSubscription);
 
     // Sort değişikliklerini izle
-    const sortSubscription = this.sortControl.valueChanges.subscribe(() => {
+    const sortSubscription = this.searchControls.sortControl.valueChanges.subscribe(() => {
       this.resetSearch();
     });
 
     this.subscriptions.push(sortSubscription);
 
     // Yıl değişikliklerini izle
-    const yearStartSubscription = this.yearStartControl.valueChanges.subscribe(() => {
-      this.resetSearch();
-    });
+    if (this.searchControls.yearStartControl) {
+      const yearStartSubscription = this.searchControls.yearStartControl.valueChanges.subscribe(() => {
+        this.resetSearch();
+      });
+      this.subscriptions.push(yearStartSubscription);
+    }
 
-    const yearEndSubscription = this.yearEndControl.valueChanges.subscribe(() => {
-      this.resetSearch();
-    });
-
-    this.subscriptions.push(yearStartSubscription, yearEndSubscription);
+    if (this.searchControls.yearEndControl) {
+      const yearEndSubscription = this.searchControls.yearEndControl.valueChanges.subscribe(() => {
+        this.resetSearch();
+      });
+      this.subscriptions.push(yearEndSubscription);
+    }
 
     // Intersection Observer'ı başlat
     this.setupIntersectionObserver();
@@ -271,11 +205,11 @@ export class SearchComponent implements OnInit, OnDestroy {
       this.selectedGenres = params['genres'] ? params['genres'].split(',') : [];
       
       // Yıl parametrelerini ayarla
-      if (params['yearStart']) {
-        this.yearStartControl.setValue(parseInt(params['yearStart']));
+      if (params['yearStart'] && this.searchControls.yearStartControl) {
+        this.searchControls.yearStartControl.setValue(parseInt(params['yearStart']));
       }
-      if (params['yearEnd']) {
-        this.yearEndControl.setValue(parseInt(params['yearEnd']));
+      if (params['yearEnd'] && this.searchControls.yearEndControl) {
+        this.searchControls.yearEndControl.setValue(parseInt(params['yearEnd']));
       }
       
       this.searchQuery.set(this.searchTerm);
@@ -340,8 +274,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   isGenreSelected(genre: string): boolean {
-    const currentGenres = this.genresControl.value || [];
-    return currentGenres.includes(genre);
+    return this.searchFilterService.isGenreSelected(genre, this.searchControls);
   }
 
   toggleStatus(status: string): void {
@@ -366,12 +299,12 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   onGenreChange(event: Event, genre: string): void {
     const checkbox = event.target as HTMLInputElement;
-    const currentGenres = this.genresControl.value || [];
+    const currentGenres = this.searchControls.genresControl.value || [];
     
     if (checkbox.checked) {
-      this.genresControl.setValue([...currentGenres, genre]);
+      this.searchControls.genresControl.setValue([...currentGenres, genre]);
     } else {
-      this.genresControl.setValue(currentGenres.filter(g => g !== genre));
+      this.searchControls.genresControl.setValue(currentGenres.filter(g => g !== genre));
     }
     
     // Otomatik arama yap
@@ -403,15 +336,10 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.sortBy = '';
     
     // Form kontrollerini temizle
-    this.formatControl.setValue(null);
-    this.statusControl.setValue(null);
-    this.genresControl.setValue([]);
-    this.sortControl.setValue('POPULARITY_DESC');
-    this.yearStartControl.setValue(null);
-    this.yearEndControl.setValue(null);
+    this.searchFilterService.clearFilters(this.searchControls);
     
     // Dropdown'u kapat
-    this.showFiltersDropdown = false;
+    this.dropdownState.showFiltersDropdown.set(false);
     
     this.resetSearch();
   }
@@ -439,12 +367,12 @@ export class SearchComponent implements OnInit, OnDestroy {
       queryParams.sort = this.sortBy;
     }
 
-    if (this.yearStartControl.value) {
-      queryParams.yearStart = this.yearStartControl.value;
+    if (this.searchControls.yearStartControl?.value) {
+      queryParams.yearStart = this.searchControls.yearStartControl.value;
     }
 
-    if (this.yearEndControl.value) {
-      queryParams.yearEnd = this.yearEndControl.value;
+    if (this.searchControls.yearEndControl?.value) {
+      queryParams.yearEnd = this.searchControls.yearEndControl.value;
     }
 
     this.router.navigate([], { queryParams, replaceUrl: true });
@@ -458,13 +386,13 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.loading.set(true);
 
     const filters: SearchFilters = {
-      search: this.searchControl.value || undefined,
-      format: this.formatControl.value || undefined,
-      status: this.statusControl.value || undefined,
-      genres: this.genresControl.value?.length ? this.genresControl.value : undefined,
-      sort: this.sortControl.value ? [this.sortControl.value] : ['POPULARITY_DESC'],
-      yearStart: this.yearStartControl.value || undefined,
-      yearEnd: this.yearEndControl.value || undefined
+      search: this.searchControls.searchControl.value || undefined,
+      format: this.searchControls.formatControl.value || undefined,
+      status: this.searchControls.statusControl.value || undefined,
+      genres: this.searchControls.genresControl.value?.length ? this.searchControls.genresControl.value : undefined,
+      sort: this.searchControls.sortControl.value ? [this.searchControls.sortControl.value] : ['POPULARITY_DESC'],
+      yearStart: this.searchControls.yearStartControl?.value || undefined,
+      yearEnd: this.searchControls.yearEndControl?.value || undefined
     };
 
     this.anilistService.searchAnime(filters, page).pipe(
@@ -549,13 +477,13 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.loading.set(true);
 
     const filters: SearchFilters = {
-      search: this.searchControl.value || undefined,
-      format: this.formatControl.value || undefined,
-      status: this.statusControl.value || undefined,
-      genres: this.genresControl.value?.length ? this.genresControl.value : undefined,
-      sort: this.sortControl.value ? [this.sortControl.value] : ['POPULARITY_DESC'],
-      yearStart: this.yearStartControl.value || undefined,
-      yearEnd: this.yearEndControl.value || undefined
+      search: this.searchControls.searchControl.value || undefined,
+      format: this.searchControls.formatControl.value || undefined,
+      status: this.searchControls.statusControl.value || undefined,
+      genres: this.searchControls.genresControl.value?.length ? this.searchControls.genresControl.value : undefined,
+      sort: this.searchControls.sortControl.value ? [this.searchControls.sortControl.value] : ['POPULARITY_DESC'],
+      yearStart: this.searchControls.yearStartControl?.value || undefined,
+      yearEnd: this.searchControls.yearEndControl?.value || undefined
     };
 
     this.anilistService.searchAnime(filters, this.currentPage).pipe(

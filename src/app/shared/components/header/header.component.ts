@@ -20,6 +20,7 @@ export class HeaderComponent implements OnInit {
   showMobileMenu = signal(false);
   isLoggedIn = signal(false);
   searchQuery = '';
+  currentYear = new Date().getFullYear();
 
   ngOnInit() {
     this.isLoggedIn.set(this.authService.isAuthenticated());
@@ -55,6 +56,20 @@ export class HeaderComponent implements OnInit {
   getUserInitials() {
     const user = this.getCurrentUser();
     return user?.username ? user.username.substring(0, 2).toUpperCase() : 'U';
+  }
+
+  getCurrentSeason(): string {
+    const month = new Date().getMonth() + 1;
+    
+    if (month >= 3 && month <= 5) {
+      return 'SPRING';
+    } else if (month >= 6 && month <= 8) {
+      return 'SUMMER';
+    } else if (month >= 9 && month <= 11) {
+      return 'FALL';
+    } else {
+      return 'WINTER';
+    }
   }
 
   logout() {

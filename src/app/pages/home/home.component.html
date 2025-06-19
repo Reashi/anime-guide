@@ -31,28 +31,25 @@
       <h2 class="text-3xl font-bold text-gray-900 dark:text-white">
         🌟 {{ currentSeasonName }} {{ currentYear }} Animeleri
       </h2>
-      <a [routerLink]="['/seasons', getCurrentSeason(), currentYear]" class="text-blue-600 hover:text-blue-800 font-medium">
+      <a [routerLink]="['seasons/:season/:year']" [queryParams]="{season: getCurrentSeason(), year: currentYear}" class="text-blue-600 hover:text-blue-800 font-medium">
         Tümünü Gör →
       </a>
     </div>
     
-    @if (loadingSeason) {
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-        @for (item of [1,2,3,4,5,6]; track item) {
-          <div class="animate-pulse">
-            <div class="aspect-anime-poster bg-gray-300 rounded-lg mb-4"></div>
-            <div class="h-4 bg-gray-300 rounded mb-2"></div>
-            <div class="h-3 bg-gray-300 rounded w-3/4"></div>
-          </div>
-        }
+    <div *ngIf="loadingSeason" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+      <div *ngFor="let i of [1,2,3,4,5,6]" class="animate-pulse">
+        <div class="bg-gray-300 dark:bg-gray-700 aspect-[3/4] rounded-lg mb-2"></div>
+        <div class="bg-gray-300 dark:bg-gray-700 h-4 rounded mb-1"></div>
+        <div class="bg-gray-300 dark:bg-gray-700 h-3 rounded w-3/4"></div>
       </div>
-    } @else {
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-        @for (anime of seasonAnime; track anime.id) {
-          <app-anime-card [anime]="anime"></app-anime-card>
-        }
-      </div>
-    }
+    </div>
+    
+    <div *ngIf="!loadingSeason" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+      <app-anime-card 
+        *ngFor="let anime of seasonAnime" 
+        [anime]="anime">
+      </app-anime-card>
+    </div>
   </section>
 
   <!-- Ad Space -->
@@ -69,23 +66,20 @@
       </a>
     </div>
     
-    @if (loadingTrending) {
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-        @for (item of [1,2,3,4,5,6]; track item) {
-          <div class="animate-pulse">
-            <div class="aspect-anime-poster bg-gray-300 rounded-lg mb-4"></div>
-            <div class="h-4 bg-gray-300 rounded mb-2"></div>
-            <div class="h-3 bg-gray-300 rounded w-3/4"></div>
-          </div>
-        }
+    <div *ngIf="loadingTrending" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+      <div *ngFor="let i of [1,2,3,4,5,6]" class="animate-pulse">
+        <div class="bg-gray-300 dark:bg-gray-700 aspect-[3/4] rounded-lg mb-2"></div>
+        <div class="bg-gray-300 dark:bg-gray-700 h-4 rounded mb-1"></div>
+        <div class="bg-gray-300 dark:bg-gray-700 h-3 rounded w-3/4"></div>
       </div>
-    } @else {
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-        @for (anime of trendingAnime; track anime.id) {
-          <app-anime-card [anime]="anime"></app-anime-card>
-        }
-      </div>
-    }
+    </div>
+    
+    <div *ngIf="!loadingTrending" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+      <app-anime-card 
+        *ngFor="let anime of trendingAnime" 
+        [anime]="anime">
+      </app-anime-card>
+    </div>
   </section>
 
   <!-- Popular Anime Section -->
@@ -99,23 +93,20 @@
       </a>
     </div>
     
-    @if (loadingPopular) {
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-        @for (item of [1,2,3,4,5,6]; track item) {
-          <div class="animate-pulse">
-            <div class="aspect-anime-poster bg-gray-300 rounded-lg mb-4"></div>
-            <div class="h-4 bg-gray-300 rounded mb-2"></div>
-            <div class="h-3 bg-gray-300 rounded w-3/4"></div>
-          </div>
-        }
+    <div *ngIf="loadingPopular" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+      <div *ngFor="let i of [1,2,3,4,5,6]" class="animate-pulse">
+        <div class="bg-gray-300 dark:bg-gray-700 aspect-[3/4] rounded-lg mb-2"></div>
+        <div class="bg-gray-300 dark:bg-gray-700 h-4 rounded mb-1"></div>
+        <div class="bg-gray-300 dark:bg-gray-700 h-3 rounded w-3/4"></div>
       </div>
-    } @else {
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-        @for (anime of popularAnime; track anime.id) {
-          <app-anime-card [anime]="anime"></app-anime-card>
-        }
-      </div>
-    }
+    </div>
+    
+    <div *ngIf="!loadingPopular" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+      <app-anime-card 
+        *ngFor="let anime of popularAnime" 
+        [anime]="anime">
+      </app-anime-card>
+    </div>
   </section>
 
   <!-- Ad Space -->

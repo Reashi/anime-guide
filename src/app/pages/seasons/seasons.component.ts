@@ -1,24 +1,27 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, inject, signal, computed, HostListener, ElementRef, ViewChild, PLATFORM_ID, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject, signal, computed, HostListener, ElementRef, ViewChild, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormsModule, ReactiveFormsModule, FormControl, FormGroup, FormBuilder } from '@angular/forms';
 import { AnilistService, SearchFilters } from '../../core/services/anilist.service';
+import { SearchFilterService, SearchFormControls } from '../../core/services/search-filter.service';
 import { Anime } from '../../core/models/anime.model';
 import { AnimeCardComponent } from '../../shared/components/anime-card/anime-card.component';
 import { Subject, Subscription } from 'rxjs';
-import { finalize, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { FormBuilder, FormGroup, FormControl } from '@angular/forms';
 
 @Component({
   selector: 'app-seasons',
   standalone: true,
-  imports: [CommonModule, AnimeCardComponent, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, AnimeCardComponent, ReactiveFormsModule],
   templateUrl: './seasons.component.html',
   styleUrls: ['./seasons.component.scss']
 })
-export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
+export class SeasonsComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('loadingTrigger') loadingTrigger!: ElementRef;
 
   private anilistService = inject(AnilistService);
+  private searchFilterService = inject(SearchFilterService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private searchSubject = new Subject<string>();
@@ -30,9 +33,7 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Signals
   animes = signal<Anime[]>([]);
-  displayedAnimes = signal<Anime[]>([]);
   loading = signal(false);
-  loadingMore = signal(false);
   pageInfo = signal<{
     total: number;
     currentPage: number;
@@ -45,12 +46,15 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
     hasNextPage: false
   });
   searchQuery = signal('');
-  totalResults = computed(() => this.animes().length);
-  
-  // Infinite scroll properties
-  private itemsPerPage = 20;
-  private currentDisplayedCount = 0;
+  totalSeasonAnimes = signal<number>(0); // Gerçek total sayısı
+  allSeasonAnimes = signal<Anime[]>([]); // Tüm animeler memory'de
+  currentDisplayCount = signal<number>(20); // Şu anda gösterilen sayı
 
+  // Search filter servisi ile yönetilecek
+  searchForm!: FormGroup;
+  searchControls!: SearchFormControls;
+  dropdownState = this.searchFilterService.createDropdownState();
+  
   // Form değişkenleri
   searchTerm = '';
   sortBy = '';
@@ -59,41 +63,36 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedGenres: string[] = [];
   showFilters = false;
 
-  // Dropdown state
-  showSortDropdown = false;
-  showFiltersDropdown = false;
-
   // Seçenekler
-  sortOptions = this.anilistService.getSortOptions();
-  statusOptions = this.anilistService.getStatusOptions();
-  formatOptions = this.anilistService.getFormatOptions();
-  genreOptions = this.anilistService.getGenreOptions();
+  sortOptions = this.searchFilterService.sortOptions;
+  statusOptions = this.searchFilterService.statusOptions;
+  formatOptions = this.searchFilterService.formatOptions;
+  genreOptions = this.searchFilterService.genreOptions;
 
-  searchForm: FormGroup;
   currentPage = 1;
   currentYear = new Date().getFullYear();
 
-  // Form Controls - public olarak tanımlanmalı
-  public searchControl = new FormControl('');
-  public genresControl = new FormControl<string[]>([]);
-  public formatControl = new FormControl<string | null>(null);
-  public statusControl = new FormControl<string | null>(null);
-  public sortControl = new FormControl('POPULARITY_DESC');
-
-
-  // Seasons specific
+  // Season-specific properties
   seasons = ['WINTER', 'SPRING', 'SUMMER', 'FALL'];
   currentSeason = 'WINTER';
   selectedYear = new Date().getFullYear();
 
   constructor() {
-    this.searchForm = this.fb.group({
-      search: this.searchControl,
-      genres: this.genresControl,
-      format: this.formatControl,
-      status: this.statusControl,
-      sort: this.sortControl
-    });
+    // Form oluştur (yıl filtreleri olmadan)
+    const formData = this.searchFilterService.createSearchForm({ includeYearFilters: false });
+    this.searchForm = formData.form;
+    this.searchControls = formData.controls;
+
+    // Set current season based on current date
+    this.setCurrentSeason();
+  }
+
+  @HostListener('document:keydown.enter', ['$event'])
+  onEnterKey(event: Event) {
+    if (document.activeElement?.id === 'searchInput') {
+      event.preventDefault();
+      this.resetSearch();
+    }
   }
 
   @HostListener('document:click', ['$event'])
@@ -104,258 +103,156 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  @HostListener('document:keydown.escape')
-  onEscapeKey() {
-    this.closeAllDropdowns();
+  // Season-specific methods
+  setCurrentSeason(): void {
+    const month = new Date().getMonth();
+    if (month >= 0 && month <= 2) {
+      this.currentSeason = 'WINTER';
+    } else if (month >= 3 && month <= 5) {
+      this.currentSeason = 'SPRING';
+    } else if (month >= 6 && month <= 8) {
+      this.currentSeason = 'SUMMER';
+    } else {
+      this.currentSeason = 'FALL';
+    }
+  }
+
+  selectSeason(season: string): void {
+    this.currentSeason = season;
+    this.resetSearch();
+  }
+
+  selectYear(year: number): void {
+    this.selectedYear = year;
+    this.resetSearch();
+  }
+
+  getSeasonLabel(season: string): string {
+    const labels: { [key: string]: string } = {
+      'WINTER': 'Kış',
+      'SPRING': 'İlkbahar', 
+      'SUMMER': 'Yaz',
+      'FALL': 'Sonbahar'
+    };
+    return labels[season] || season;
   }
 
   // Dropdown Yönetimi
   toggleSortDropdown(): void {
-    this.showSortDropdown = !this.showSortDropdown;
-    this.showFiltersDropdown = false;
+    this.dropdownState.toggleSortDropdown();
   }
 
   toggleFiltersDropdown(): void {
-    this.showFiltersDropdown = !this.showFiltersDropdown;
-    this.showSortDropdown = false;
+    this.dropdownState.toggleFiltersDropdown();
   }
 
   closeAllDropdowns(): void {
-    this.showSortDropdown = false;
-    this.showFiltersDropdown = false;
+    this.dropdownState.closeAllDropdowns();
   }
 
   // Seçim Fonksiyonları
   selectSort(sort: string): void {
-    this.sortControl.setValue(sort);
-    this.showSortDropdown = false;
-    // loadSeasonAnimes() artık FormControl subscription tarafından çağrılacak
+    this.searchControls.sortControl.setValue(sort);
+    this.dropdownState.showSortDropdown.set(false);
   }
 
-  // Label Getirme Fonksiyonları
+  // Label Getirme Fonksiyonları (Servisten)
   getFormatLabel(format: string | null): string {
-    if (!format) {
-      return 'Tümü';
-    }
-    const formatLabels: { [key: string]: string } = {
-      'TV': 'TV',
-      'MOVIE': 'Film',
-      'OVA': 'OVA',
-      'ONA': 'ONA',
-      'SPECIAL': 'Özel'
-    };
-    return formatLabels[format] || format;
+    return this.searchFilterService.getFormatLabel(format);
   }
 
   getStatusLabel(status: string | null): string {
-    if (!status) {
-      return 'Tümü';
-    }
-    const statusLabels: { [key: string]: string } = {
-      'FINISHED': 'Tamamlandı',
-      'RELEASING': 'Devam Ediyor',
-      'NOT_YET_RELEASED': 'Yayınlanmadı',
-      'CANCELLED': 'İptal Edildi'
-    };
-    return statusLabels[status] || status;
+    return this.searchFilterService.getStatusLabel(status);
   }
 
   getSortLabel(sort: string | null): string {
-    if (!sort) {
-      return 'Popülerlik (Azalan)';
-    }
-    const sortLabels: { [key: string]: string } = {
-      'POPULARITY_DESC': 'Popülerlik (Azalan)',
-      'POPULARITY': 'Popülerlik (Artan)',
-      'SCORE_DESC': 'Puan (Azalan)',
-      'SCORE': 'Puan (Artan)',
-      'TRENDING_DESC': 'Trend (Azalan)',
-      'TRENDING': 'Trend (Artan)'
-    };
-    return sortLabels[sort] || sort;
+    return this.searchFilterService.getSortLabel(sort);
   }
 
   getYearOptions(): number[] {
-    const currentYear = new Date().getFullYear();
-    const startYear = 1960;
-    const years: number[] = [];
-    
-    // Gelecek yıl da dahil olmak üzere 
-    for (let year = currentYear + 1; year >= startYear; year--) {
-      years.push(year);
-    }
-    
-    return years;
+    return this.searchFilterService.getYearOptions();
   }
 
-
-
-  // Aktif Filtre Kontrolü
+  // Aktif Filtre Kontrolü (Servisten)
   hasActiveFilters(): boolean {
-    return !!(
-      this.formatControl.value ||
-      this.statusControl.value ||
-      this.genresControl.value?.length
-    );
+    return this.searchFilterService.hasActiveFilters(this.searchControls);
   }
 
   // Aktif filtre metni
   getActiveFiltersText(): string {
-    const activeCount = this.getActiveFiltersCount();
-    if (activeCount === 0) {
-      return 'Filtreler';
-    }
-    return `Filtreler (${activeCount})`;
+    return this.searchFilterService.getActiveFiltersText(this.searchControls);
   }
 
+  // Aktif filtre sayısı
   getActiveFiltersCount(): number {
-    let count = 0;
-    if (this.formatControl.value) count++;
-    if (this.statusControl.value) count++;
-    if (this.genresControl.value && this.genresControl.value.length > 0) count++;
-    return count;
+    return this.searchFilterService.getActiveFiltersCount(this.searchControls);
   }
 
-  isGenreSelected(genre: string): boolean {
-    const genres = this.genresControl.value || [];
-    return genres.includes(genre);
-  }
-
-  onGenreChange(event: Event, genre: string): void {
-    event.stopPropagation(); // Event'in yukarı çıkmasını engelle
-    const checkbox = event.target as HTMLInputElement;
-    const currentGenres = this.genresControl.value || [];
-    
-    if (checkbox.checked) {
-      // Genre'yi ekle
-      if (!currentGenres.includes(genre)) {
-        const newGenres = [...currentGenres, genre];
-        this.genresControl.setValue(newGenres);
-      }
-    } else {
-      // Genre'yi çıkar
-      const newGenres = currentGenres.filter(g => g !== genre);
-      this.genresControl.setValue(newGenres);
-    }
-    // loadSeasonAnimes() artık FormControl subscription tarafından çağrılacak
-  }
-
-  onFormatChange(event: Event): void {
-    event.stopPropagation();
-    // loadSeasonAnimes() artık FormControl subscription tarafından çağrılacak
-  }
-
-  onStatusChange(event: Event): void {
-    event.stopPropagation();
-    // loadSeasonAnimes() artık FormControl subscription tarafından çağrılacak
-  }
-
-
-
-  clearFilters(): void {
-    this.formatControl.setValue(null);
-    this.statusControl.setValue(null);
-    this.genresControl.setValue([]);
-    this.sortControl.setValue('POPULARITY_DESC');
-    
-    // Dropdown'u kapat
-    this.showFiltersDropdown = false;
-    
-    // loadSeasonAnimes() artık FormControl subscription tarafından çağrılacak
+  // Total count display için
+  getDisplayTotal(): number {
+    return Math.max(this.animes().length, this.totalSeasonAnimes());
   }
 
   ngOnInit(): void {
-    this.currentSeason = this.getCurrentSeason();
-    this.loadSeasonAnimes();
-
-    // Arama kontrolünü dinle
-    const searchSubscription = this.searchControl.valueChanges
+    // Setup intersection observer for infinite scroll
+    this.setupIntersectionObserver();
+    
+    // Arama kutusunun değişikliklerini izle
+    const searchSubscription = this.searchControls.searchControl.valueChanges
       .pipe(
-        debounceTime(500),
+        debounceTime(300),
         distinctUntilChanged()
       )
-      .subscribe(searchTerm => {
-        this.searchQuery.set(searchTerm || '');
-        this.filterAnimes();
+      .subscribe((searchTerm: string | null) => {
+        this.resetSearch();
       });
 
-    // Format değişikliklerini dinle
-    const formatSubscription = this.formatControl.valueChanges.subscribe(() => {
-      this.loadSeasonAnimes();
+    this.subscriptions.push(searchSubscription);
+
+    // Format değişikliklerini izle
+    const formatSubscription = this.searchControls.formatControl.valueChanges.subscribe(() => {
+      this.resetSearch();
     });
 
-    // Status değişikliklerini dinle
-    const statusSubscription = this.statusControl.valueChanges.subscribe(() => {
-      this.loadSeasonAnimes();
+    this.subscriptions.push(formatSubscription);
+
+    // Status değişikliklerini izle
+    const statusSubscription = this.searchControls.statusControl.valueChanges.subscribe(() => {
+      this.resetSearch();
     });
 
-    // Sort değişikliklerini dinle
-    const sortSubscription = this.sortControl.valueChanges.subscribe(() => {
-      this.loadSeasonAnimes();
+    this.subscriptions.push(statusSubscription);
+
+    // Sort değişikliklerini izle
+    const sortSubscription = this.searchControls.sortControl.valueChanges.subscribe(() => {
+      this.resetSearch();
     });
 
-    // Genres değişikliklerini dinle
-    const genresSubscription = this.genresControl.valueChanges.subscribe(() => {
-      this.loadSeasonAnimes();
+    this.subscriptions.push(sortSubscription);
+
+    // URL'den arama parametrelerini al
+    this.route.queryParams.subscribe(params => {
+      if (params['season']) {
+        this.currentSeason = params['season'];
+      }
+      if (params['year']) {
+        this.selectedYear = parseInt(params['year']);
+      }
+      this.initializeSeasonData();
     });
 
-    // Form değişikliklerini dinle
-    this.subscriptions.push(
-      searchSubscription,
-      formatSubscription,
-      statusSubscription,
-      sortSubscription,
-      genresSubscription
-    );
+    // İlk yükleme
+    this.initializeSeasonData();
   }
 
   ngAfterViewInit(): void {
-    // View tamamen yüklendikten sonra intersection observer'ı başlat
-    this.setupInfiniteScroll();
-  }
-
-  private setupInfiniteScroll(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      // Observer'ı daha geç setup et, view init'ten sonra
+    // ViewChild hazır olduktan sonra intersection observer'ı başlat
+    if (this.loadingTrigger && this.observer && isPlatformBrowser(this.platformId)) {
       setTimeout(() => {
-        this.initializeObserver();
-      }, 1000);
-    }
-  }
-
-  private initializeObserver(): void {
-    // IntersectionObserver sadece browser'da mevcuttur
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    if (this.loadingTrigger && this.loadingTrigger.nativeElement) {
-      // Eğer zaten observer varsa disconnect et
-      if (this.observer) {
-        this.observer.disconnect();
-      }
-      
-      this.observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting && this.hasMoreToLoad() && !this.loadingMore()) {
-              console.log('Loading more animes...', {
-                currentDisplayed: this.currentDisplayedCount,
-                totalAnimes: this.animes().length,
-                hasMore: this.hasMoreToLoad()
-              });
-              this.loadMoreAnimes();
-            }
-          });
-        },
-        { 
-          threshold: 0.1,
-          rootMargin: '50px'
+        if (this.loadingTrigger && this.observer && this.pageInfo().hasNextPage) {
+          this.observer.observe(this.loadingTrigger.nativeElement);
         }
-      );
-      this.observer.observe(this.loadingTrigger.nativeElement);
-    } else {
-      setTimeout(() => this.initializeObserver(), 500);
+      }, 100);
     }
   }
 
@@ -366,207 +263,244 @@ export class SeasonsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  getCurrentSeason(): string {
-    const month = new Date().getMonth() + 1;
-    if (month >= 12 || month <= 2) return 'WINTER';
-    if (month >= 3 && month <= 5) return 'SPRING';
-    if (month >= 6 && month <= 8) return 'SUMMER';
-    return 'FALL';
-  }
+  private setupIntersectionObserver(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
 
-  getSeasonLabel(season: string): string {
-    const labels: { [key: string]: string } = {
-      'WINTER': 'Kış',
-      'SPRING': 'İlkbahar',
-      'SUMMER': 'Yaz',
-      'FALL': 'Sonbahar'
-    };
-    return labels[season] || season;
-  }
-
-  selectSeason(season: string): void {
-    this.currentSeason = season;
-    this.loadSeasonAnimes();
-  }
-
-  selectYear(year: number): void {
-    this.selectedYear = year;
-    this.loadSeasonAnimes();
-  }
-
-  trackByAnimeId(index: number, anime: Anime): number {
-    return anime.id;
-  }
-
-  clearSearch(): void {
-    this.searchControl.setValue('');
-    this.searchQuery.set('');
-    this.filterAnimes();
-  }
-
-  // Infinite scroll methods
-  hasMoreToLoad(): boolean {
-    return this.currentDisplayedCount < this.animes().length;
-  }
-
-  private loadMoreAnimes(): void {
-    if (this.loadingMore() || !this.hasMoreToLoad()) return;
-    
-    this.loadingMore.set(true);
-    
-    setTimeout(() => {
-      const nextBatch = this.animes().slice(
-        this.currentDisplayedCount, 
-        this.currentDisplayedCount + this.itemsPerPage
-      );
-      
-      this.displayedAnimes.update(current => [...current, ...nextBatch]);
-      this.currentDisplayedCount += nextBatch.length;
-      this.loadingMore.set(false);
-    }, 500); // Simulated loading delay
-  }
-
-  private resetDisplayedAnimes(): void {
-    this.currentDisplayedCount = 0;
-    const initialBatch = this.animes().slice(0, this.itemsPerPage);
-    this.displayedAnimes.set(initialBatch);
-    this.currentDisplayedCount = initialBatch.length;
-    
-    // Observer'ı yeniden başlat (sadece browser'da)
-    if (isPlatformBrowser(this.platformId)) {
-      setTimeout(() => {
-        this.initializeObserver();
-      }, 100);
-    }
-  }
-
-  private allAnimes: Anime[] = []; // Tüm animeler (filtrelenmemiş)
-  private isSearching = false;
-
-  private filterAnimes(): void {
-    if (!this.searchQuery().trim()) {
-      // Arama yoksa tüm animeleri göster
-      this.animes.set(this.allAnimes);
-      this.isSearching = false;
-      return;
-    }
-
-    this.isSearching = true;
-    const searchTerm = this.searchQuery().toLowerCase().trim();
-    
-    const filteredAnimes = this.allAnimes.filter(anime => {
-      // Anime başlığında arama yap
-      const titleMatch = anime.title.toLowerCase().includes(searchTerm) ||
-                        anime.englishTitle?.toLowerCase().includes(searchTerm) ||
-                        anime.nativeTitle?.toLowerCase().includes(searchTerm);
-      
-      // Genre'larda arama yap
-      const genreMatch = anime.genres.some(genre => 
-        genre.toLowerCase().includes(searchTerm)
-      );
-      
-      // Studio'larda arama yap
-      const studioMatch = anime.studios.some(studio => 
-        studio.toLowerCase().includes(searchTerm)
-      );
-      
-      return titleMatch || genreMatch || studioMatch;
-    });
-
-    this.animes.set(filteredAnimes);
-    this.resetDisplayedAnimes();
-    this.pageInfo.set({
-      total: filteredAnimes.length,
-      currentPage: 1,
-      lastPage: 1,
-      hasNextPage: false
-    });
-  }
-
-  private loadSeasonAnimes(): void {
-    this.loading.set(true);
-    
-    // Tüm sayfalardaki anime'leri toplamak için
-    this.loadAllSeasonPages();
-  }
-
-  private async loadAllSeasonPages(): Promise<void> {
-    try {
-      let allAnimes: Anime[] = [];
-      let currentPage = 1;
-      let hasNextPage = true;
-      
-      while (hasNextPage && currentPage <= 20) { // Maksimum 20 sayfa (1000 anime)
-        const response = await this.anilistService.getSeasonAnimes(
-          this.currentSeason,
-          this.selectedYear,
-          currentPage,
-          50 // AniList API maksimum limit
-        ).toPromise();
-        
-        if (response && response.media) {
-          allAnimes = [...allAnimes, ...response.media];
-          hasNextPage = response.pageInfo?.hasNextPage || false;
-        } else {
-          hasNextPage = false;
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !this.isLoading && this.pageInfo().hasNextPage) {
+          this.loadMoreResults();
         }
-        
-        currentPage++;
-      }
-      
-      // Client-side filtreleme uygula
-      let filteredAnimes = allAnimes;
-      
-      if (this.formatControl.value) {
-        filteredAnimes = filteredAnimes.filter((anime: Anime) => anime.format === this.formatControl.value);
-      }
-      
-      if (this.statusControl.value) {
-        filteredAnimes = filteredAnimes.filter((anime: Anime) => anime.status === this.statusControl.value);
-      }
-      
-      if (this.genresControl.value && this.genresControl.value.length > 0) {
-        filteredAnimes = filteredAnimes.filter((anime: Anime) => 
-          this.genresControl.value!.some(genre => anime.genres.includes(genre))
-        );
-      }
-      
-      // Sıralama uygula
-      const sortValue = this.sortControl.value || 'POPULARITY_DESC';
-      if (sortValue === 'SCORE_DESC') {
-        filteredAnimes.sort((a: Anime, b: Anime) => (b.averageScore || 0) - (a.averageScore || 0));
-      } else if (sortValue === 'SCORE') {
-        filteredAnimes.sort((a: Anime, b: Anime) => (a.averageScore || 0) - (b.averageScore || 0));
-      } else if (sortValue === 'POPULARITY') {
-        filteredAnimes.sort((a: Anime, b: Anime) => (a.popularity || 0) - (b.popularity || 0));
-      } else {
-        // POPULARITY_DESC (default)
-        filteredAnimes.sort((a: Anime, b: Anime) => (b.popularity || 0) - (a.popularity || 0));
-      }
-      
-      console.log(`After filtering: ${filteredAnimes.length} animes`);
-      
-      // Orijinal animeleri kaydet
-      this.allAnimes = filteredAnimes;
-      
-      // Arama varsa filtrele, yoksa tümünü göster
-      if (this.searchQuery().trim()) {
-        this.filterAnimes();
-      } else {
-        this.animes.set(filteredAnimes);
-        this.resetDisplayedAnimes();
-        this.pageInfo.set({
-          total: filteredAnimes.length,
-          currentPage: 1,
-          lastPage: 1,
-          hasNextPage: false
-        });
-      }
-      
-      this.loading.set(false);
-    } catch (error) {
-      console.error('Error loading seasonal anime:', error);
-      this.loading.set(false);
+      });
+    }, { 
+      threshold: 0.1,
+      rootMargin: '100px'
+    });
+  }
+
+  private initializeSeasonData(): void {
+    // Tek seferde tüm sezon animelerini yükle
+    this.loadAllSeasonAnimes();
+  }
+
+  private resetSearch(): void {
+    this.currentPage = 1;
+    this.animes.set([]);
+    this.totalSeasonAnimes.set(0);
+    this.allSeasonAnimes.set([]);
+    this.currentDisplayCount.set(20);
+    this.initializeSeasonData();
+  }
+
+  private loadAllSeasonAnimes(): void {
+    if (this.isLoading) return;
+
+    this.isLoading = true;
+    this.loading.set(true);
+
+    const filters: SearchFilters = {
+      search: this.searchControls.searchControl.value || undefined,
+      season: this.currentSeason,
+      year: this.selectedYear,
+      sort: [this.searchControls.sortControl.value || 'POPULARITY_DESC'],
+      format: this.searchControls.formatControl.value || undefined,
+      status: this.searchControls.statusControl.value || undefined,
+      genres: this.searchControls.genresControl.value && this.searchControls.genresControl.value.length > 0 
+        ? this.searchControls.genresControl.value : undefined
+    };
+
+    // Tüm sayfaları çekerek birleştir
+    this.loadAllPages(filters, []);
+  }
+
+  private loadAllPages(filters: SearchFilters, allAnimes: Anime[], page: number = 1): void {
+    this.anilistService.searchAnime(filters, page, 50)
+      .subscribe({
+        next: (response) => {
+          const newAnimes = response.media || [];
+          const combinedAnimes = [...allAnimes, ...newAnimes];
+          
+          // Eğer daha fazla sayfa varsa, sonraki sayfayı çek
+          if (response.pageInfo?.hasNextPage && newAnimes.length > 0) {
+            this.loadAllPages(filters, combinedAnimes, page + 1);
+          } else {
+            // Tüm sayfalar yüklendi
+            this.allSeasonAnimes.set(combinedAnimes);
+            this.totalSeasonAnimes.set(combinedAnimes.length);
+            
+            // İlk 20 tanesini göster
+            this.showFirstAnimes();
+
+            this.updateUrlAndSearch();
+
+            // Infinite scroll setup
+            setTimeout(() => this.startInfiniteScroll(), 100);
+            
+            // Loading'i bitir
+            this.isLoading = false;
+            this.loading.set(false);
+          }
+        },
+        error: (error) => {
+          console.error('Error loading season animes page:', page, error);
+          this.isLoading = false;
+          this.loading.set(false);
+        }
+      });
+  }
+
+  private showFirstAnimes(): void {
+    const allAnimes = this.allSeasonAnimes();
+    const firstTwenty = allAnimes.slice(0, 20);
+    this.animes.set(firstTwenty);
+    this.currentDisplayCount.set(20);
+    
+    // PageInfo'yu güncelle
+    this.pageInfo.set({
+      total: allAnimes.length,
+      currentPage: 1,
+      lastPage: Math.ceil(allAnimes.length / 20),
+      hasNextPage: allAnimes.length > 20
+    });
+  }
+
+  private startInfiniteScroll(): void {
+    if (this.loadingTrigger && this.observer && this.pageInfo().hasNextPage) {
+      this.observer.disconnect();
+      this.observer.observe(this.loadingTrigger.nativeElement);
     }
+  }
+
+  private loadMoreResults(): void {
+    const allAnimes = this.allSeasonAnimes();
+    const currentCount = this.currentDisplayCount();
+    const newCount = Math.min(currentCount + 20, allAnimes.length);
+    
+    // Daha fazla anime göster
+    this.animes.set(allAnimes.slice(0, newCount));
+    this.currentDisplayCount.set(newCount);
+    
+    // PageInfo'yu güncelle
+    this.pageInfo.update(info => ({
+      ...info,
+      hasNextPage: newCount < allAnimes.length,
+      currentPage: Math.ceil(newCount / 20)
+    }));
+    
+    // Observer'ı yeniden başlat
+    if (this.pageInfo().hasNextPage) {
+      setTimeout(() => this.startInfiniteScroll(), 100);
+    }
+  }
+
+  isStatusSelected(status: string): boolean {
+    return this.searchControls.statusControl.value === status;
+  }
+
+  isFormatSelected(format: string): boolean {
+    return this.searchControls.formatControl.value === format;
+  }
+
+  isGenreSelected(genre: string): boolean {
+    return this.searchControls.genresControl.value?.includes(genre) || false;
+  }
+
+  toggleStatus(status: string): void {
+    const currentValue = this.searchControls.statusControl.value;
+    if (currentValue === status) {
+      this.searchControls.statusControl.setValue(null);
+    } else {
+      this.searchControls.statusControl.setValue(status);
+    }
+  }
+
+  toggleFormat(format: string): void {
+    const currentValue = this.searchControls.formatControl.value;
+    if (currentValue === format) {
+      this.searchControls.formatControl.setValue(null);
+    } else {
+      this.searchControls.formatControl.setValue(format);
+    }
+  }
+
+  onGenreChange(event: Event, genre: string): void {
+    const target = event.target as HTMLInputElement;
+    const currentGenres = this.searchControls.genresControl.value || [];
+    
+    if (target.checked) {
+      if (!currentGenres.includes(genre)) {
+        this.searchControls.genresControl.setValue([...currentGenres, genre]);
+      }
+    } else {
+      this.searchControls.genresControl.setValue(
+        currentGenres.filter((g: string) => g !== genre)
+      );
+    }
+  }
+
+  getSelectedFiltersCount(): number {
+    return this.getActiveFiltersCount();
+  }
+
+  getSelectedFiltersText(): string {
+    return this.getActiveFiltersText();
+  }
+
+  onSearchChange(): void {
+    this.resetSearch();
+  }
+
+  onSortChange(): void {
+    this.resetSearch();
+  }
+
+  clearFilters(): void {
+    this.searchControls.searchControl.setValue('');
+    this.searchControls.genresControl.setValue([]);
+    this.searchControls.formatControl.setValue(null);
+    this.searchControls.statusControl.setValue(null);
+    this.searchControls.sortControl.setValue('POPULARITY_DESC');
+    
+    this.resetSearch();
+  }
+
+  private updateUrlAndSearch(): void {
+    const queryParams: any = {
+      season: this.currentSeason,
+      year: this.selectedYear
+    };
+
+    if (this.searchControls.searchControl.value) {
+      queryParams.search = this.searchControls.searchControl.value;
+    }
+    if (this.searchControls.sortControl.value !== 'POPULARITY_DESC') {
+      queryParams.sort = this.searchControls.sortControl.value;
+    }
+    if (this.searchControls.formatControl.value) {
+      queryParams.format = this.searchControls.formatControl.value;
+    }
+    if (this.searchControls.statusControl.value) {
+      queryParams.status = this.searchControls.statusControl.value;
+    }
+    if (this.searchControls.genresControl.value && this.searchControls.genresControl.value.length > 0) {
+      queryParams.genres = this.searchControls.genresControl.value.join(',');
+    }
+
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      queryParamsHandling: 'merge'
+    });
+  }
+
+
+
+
+
+
+
+  searchAnime(append: boolean = false): void {
+    this.resetSearch();
   }
 } 

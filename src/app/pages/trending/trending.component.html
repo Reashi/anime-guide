@@ -1,332 +1,326 @@
-<!-- Trending Ana Container -->
-<div class="trending-container min-h-screen bg-gray-900 text-white">
+<!-- Trending Page Container -->
+<div class="min-h-screen bg-gradient-to-br from-red-900 via-orange-900 to-yellow-900">
   <!-- Header Section -->
-  <div class="hero-section relative overflow-hidden bg-gradient-to-br from-red-900 via-orange-900 to-yellow-900">
-    <div class="absolute inset-0 bg-black/30"></div>
-    <div class="relative z-10 container mx-auto px-4 py-16">
-      <div class="text-center mb-8">
-        <h1 class="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-          Trend Animeler
+  <section class="py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-12">
+        <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
+          🔥 Trend Animeler
         </h1>
-        <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+        <p class="text-xl md:text-2xl text-red-200 mb-8">
           {{ getTimePeriodLabel(selectedTimePeriod) }} döneminin en trend animelerini keşfedin
         </p>
-      </div>
-
-      <!-- Time Period Selection -->
-      <div class="flex flex-wrap items-center justify-center gap-4 mb-8">
+        
         <!-- Time Period Selection -->
-        <div class="flex gap-2 flex-wrap">
+        <div class="flex flex-wrap justify-center gap-3 mb-8">
           <button
             *ngFor="let period of timePeriods"
             (click)="selectTimePeriod(period.value)"
             [class]="selectedTimePeriod === period.value ? 
-              'bg-red-600 text-white' : 
-              'bg-gray-700 text-gray-300 hover:bg-gray-600'"
-            class="px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+              'bg-red-600 text-white shadow-lg transform scale-105' : 
+              'bg-gray-700/50 text-gray-300 hover:bg-gray-600 border border-gray-600'"
+            class="px-6 py-3 rounded-lg font-semibold transition-all duration-200"
           >
             {{ period.label }}
           </button>
         </div>
       </div>
+    </div>
+  </section>
 
-      <!-- Search and Filters Section -->
-      <div class="search-section max-w-4xl mx-auto">
-        <div class="search-container bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-gray-700">
-          <!-- Arama Kutusu -->
-          <div class="search-input-section mb-6">
-            <div class="relative max-w-md mx-auto">
-              <input
-                type="text"
-                [formControl]="searchControl"
-                placeholder="Anime ara... (başlık, genre, studio)"
-                class="w-full px-4 py-3 pl-12 pr-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-              >
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-              </div>
-              <button
-                *ngIf="searchControl.value"
-                (click)="clearSearch()"
-                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
-              >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
-            </div>
+  <!-- Search and Filters Section -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 relative z-10">
+    <div class="bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-gray-700">
+      <!-- Search Section -->
+      <div class="mb-6">
+        <label class="block text-white font-medium mb-3">Anime Ara</label>
+        <div class="relative">
+          <input
+            type="text"
+            [formControl]="searchControls.searchControl"
+            placeholder="Anime ara... (başlık, genre, studio)"
+            class="w-full px-4 py-3 pl-12 pr-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+          >
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
           </div>
+          <button
+            *ngIf="searchControls.searchControl.value"
+            (click)="searchControls.searchControl.setValue('')"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
 
-          <!-- Ana Kontroller -->
-          <div class="main-controls flex flex-wrap items-center justify-center gap-4">
-            <!-- Merkez - Filtreler ve Sıralama -->
-            <div class="center-controls flex flex-wrap items-center gap-3">
-              <!-- Filtreler Dropdown -->
-              <div class="relative">
-                <button
-                  type="button"
-                  (click)="toggleFiltersDropdown()"
-                  data-dropdown="filters"
-                  class="flex items-center justify-between px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 min-w-[160px]"
-                >
-                  <span class="text-sm">
-                    {{ getActiveFiltersText() }}
-                  </span>
-                  <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="showFiltersDropdown" viewBox="0 0 24 24" fill="none">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                  </svg>
-                </button>
+      <!-- Controls Row -->
+      <div class="flex flex-wrap gap-4 items-center justify-center">
+        <!-- Filters Dropdown -->
+        <div class="relative">
+          <button
+            type="button"
+            (click)="toggleFiltersDropdown()"
+            class="flex items-center justify-between px-6 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 min-w-[140px]"
+          >
+            <span class="text-sm font-medium">
+              {{ getActiveFiltersText() }}
+            </span>
+            <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="dropdownState.showFiltersDropdown()" viewBox="0 0 24 24" fill="none">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
 
-                <!-- Dropdown Content -->
-                <div *ngIf="showFiltersDropdown" class="absolute z-50 w-96 md:w-[1000px] mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-hidden left-0 md:left-auto">
-                <div class="p-3">
-                  <!-- Ana Grid Container - Yan Yana Dizim -->
-                  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    
-                    <!-- Genreler -->
-                    <div class="col-span-1">
-                      <label class="block text-xs font-medium text-gray-300 mb-2">Genreler</label>
-                      <div class="grid grid-cols-2 gap-1 max-h-45 overflow-y-auto custom-scrollbar">
-                        <label 
-                          *ngFor="let genre of genreOptions" 
-                          class="genre-filter-item flex items-center space-x-2 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500"
-                        >
-                          <input
-                            type="checkbox"
-                            [checked]="isGenreSelected(genre)"
-                            (change)="onGenreChange($event, genre)"
-                            class="form-checkbox h-3 w-3 text-red-600 rounded focus:ring-red-500 bg-gray-500 border-gray-400 flex-shrink-0"
-                          />
-                          <span class="text-xs truncate">{{ genre }}</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <!-- Formatlar -->
-                    <div class="col-span-1">
-                      <label class="block text-xs font-medium text-gray-300 mb-2">Formatlar</label>
-                      <div class="grid grid-cols-1 gap-1">
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            [value]="null"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-red-600 bg-gray-500 border-gray-400 focus:ring-red-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Tümü</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="TV"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-red-600 bg-gray-500 border-gray-400 focus:ring-red-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">TV</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="MOVIE"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-red-600 bg-gray-500 border-gray-400 focus:ring-red-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Film</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="OVA"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-red-600 bg-gray-500 border-gray-400 focus:ring-red-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">OVA</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="ONA"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-red-600 bg-gray-500 border-gray-400 focus:ring-red-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">ONA</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="SPECIAL"
-                            [formControl]="formatControl"
-                            class="form-radio h-3 w-3 text-red-600 bg-gray-500 border-gray-400 focus:ring-red-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Özel</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <!-- Durumlar -->
-                    <div class="col-span-1">
-                      <label class="block text-xs font-medium text-gray-300 mb-2">Durumlar</label>
-                      <div class="grid grid-cols-1 gap-1">
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            [value]="null"
-                            [formControl]="statusControl"
-                            class="form-radio h-3 w-3 text-red-600 bg-gray-500 border-gray-400 focus:ring-red-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Tümü</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="FINISHED"
-                            [formControl]="statusControl"
-                            class="form-radio h-3 w-3 text-red-600 bg-gray-500 border-gray-400 focus:ring-red-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Tamamlandı</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="RELEASING"
-                            [formControl]="statusControl"
-                            class="form-radio h-3 w-3 text-red-600 bg-gray-500 border-gray-400 focus:ring-red-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Devam Ediyor</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="NOT_YET_RELEASED"
-                            [formControl]="statusControl"
-                            class="form-radio h-3 w-3 text-red-600 bg-gray-500 border-gray-400 focus:ring-red-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">Yayınlanmadı</span>
-                        </label>
-                        <label class="radio-filter-item flex items-center space-x-1 cursor-pointer hover:text-red-400 transition-colors bg-gray-600 px-1 py-1 rounded text-xs hover:bg-gray-500">
-                          <input
-                            type="radio"
-                            value="CANCELLED"
-                            [formControl]="statusControl"
-                            class="form-radio h-3 w-3 text-red-600 bg-gray-500 border-gray-400 focus:ring-red-500 flex-shrink-0"
-                          />
-                          <span class="text-xs">İptal Edildi</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <!-- Çıkış Tarihi -->
-                    <div class="col-span-1">
-                      <label class="block text-xs font-medium text-gray-300 mb-2">Çıkış Tarihi</label>
-                      <div class="grid grid-cols-1 gap-2">
-                        <div>
-                          <label class="block text-xs text-gray-400 mb-1">Başlangıç</label>
-                          <select
-                            [formControl]="yearStartControl"
-                            class="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-                          >
-                            <option value="">Tümü</option>
-                            @for (year of getYearOptions(); track year) {
-                              <option [value]="year">{{ year }}</option>
-                            }
-                          </select>
-                        </div>
-                        <div>
-                          <label class="block text-xs text-gray-400 mb-1">Bitiş</label>
-                          <select
-                            [formControl]="yearEndControl"
-                            class="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-                          >
-                            <option value="">Tümü</option>
-                            @for (year of getYearOptions(); track year) {
-                              <option [value]="year">{{ year }}</option>
-                            }
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                    
-                  </div>
-
-                  <!-- Filtre Temizleme Butonu -->
-                  <div class="flex justify-end pt-2 border-t border-gray-600" *ngIf="hasActiveFilters()">
-                    <button
-                      type="button"
-                      (click)="clearFilters()"
-                      class="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 focus:outline-none focus:ring-1 focus:ring-red-500 transition-colors"
+          <!-- Filters Dropdown Content -->
+          <div *ngIf="dropdownState.showFiltersDropdown()" class="absolute z-[9999] w-80 md:w-[500px] lg:w-[700px] xl:w-[800px] mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl left-0 max-w-[90vw] origin-top-left">
+            <div class="p-4">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Genres -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-3">Genreler</label>
+                  <div class="space-y-2 max-h-48 overflow-y-auto">
+                    <label 
+                      *ngFor="let genre of genreOptions" 
+                      class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded"
                     >
-                      Filtreleri Temizle
-                    </button>
+                      <input
+                        type="checkbox"
+                        [checked]="isGenreSelected(genre)"
+                        (change)="onGenreChange($event, genre)"
+                        class="rounded border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">{{ genre }}</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Formats -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-3">Format</label>
+                  <div class="space-y-2">
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        [value]="null"
+                        [formControl]="searchControls.formatControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">Tümü</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        value="TV"
+                        [formControl]="searchControls.formatControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">TV</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        value="MOVIE"
+                        [formControl]="searchControls.formatControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">Film</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        value="OVA"
+                        [formControl]="searchControls.formatControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">OVA</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        value="ONA"
+                        [formControl]="searchControls.formatControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">ONA</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        value="SPECIAL"
+                        [formControl]="searchControls.formatControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">Özel</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Status -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-3">Durum</label>
+                  <div class="space-y-2">
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        [value]="null"
+                        [formControl]="searchControls.statusControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">Tümü</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        value="FINISHED"
+                        [formControl]="searchControls.statusControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">Tamamlandı</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        value="RELEASING"
+                        [formControl]="searchControls.statusControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">Devam Ediyor</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        value="NOT_YET_RELEASED"
+                        [formControl]="searchControls.statusControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">Yayınlanmadı</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        value="CANCELLED"
+                        [formControl]="searchControls.statusControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">İptal Edildi</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-1 rounded">
+                      <input
+                        type="radio"
+                        value="HIATUS"
+                        [formControl]="searchControls.statusControl"
+                        class="border-gray-600 text-red-600 focus:ring-red-500 bg-gray-700"
+                      />
+                      <span class="text-sm text-gray-300">Ara Verildi</span>
+                    </label>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Sıralama Dropdown -->
-            <div class="relative">
-              <button
-                type="button"
-                (click)="toggleSortDropdown()"
-                data-dropdown="sort"
-                class="flex items-center justify-between px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 min-w-[200px]"
-              >
-                <span class="text-sm">{{ getSortLabel(sortControl.value) }}</span>
-                <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="showSortDropdown" viewBox="0 0 24 24" fill="none">
-                  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </button>
-              
-              <div *ngIf="showSortDropdown" class="absolute z-[9999] w-full mt-2 bg-gray-700 border border-gray-600 rounded-lg shadow-xl overflow-hidden sort-dropdown">
+              <!-- Filter Actions -->
+              <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-700">
                 <button
-                  *ngFor="let option of sortOptions"
                   type="button"
-                  (click)="selectSort(option.value)"
-                  class="block w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600 focus:outline-none focus:bg-gray-600 transition-colors"
-                  [class.bg-red-600]="sortControl.value === option.value"
+                  (click)="clearFilters()"
+                  class="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
                 >
-                  {{ option.label }}
+                  Temizle
+                </button>
+                <button
+                  type="button"
+                  (click)="closeAllDropdowns()"
+                  class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Uygula
                 </button>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Sonuç Sayısı - Ortalanmış -->
-          <div class="results-info-section text-center mt-4">
-            <div class="text-sm text-gray-400">
-              <span class="font-medium text-white">{{ totalResults() }}</span> sonuç bulundu
+        <!-- Sort Dropdown -->
+        <div class="relative">
+          <button
+            type="button"
+            (click)="toggleSortDropdown()"
+            class="flex items-center justify-between px-6 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 min-w-[180px]"
+          >
+            <span class="text-sm font-medium">
+              {{ getSortLabel(searchControls.sortControl.value) }}
+            </span>
+            <svg class="w-4 h-4 ml-2 transition-transform" [class.rotate-180]="dropdownState.showSortDropdown()" viewBox="0 0 24 24" fill="none">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+
+          <!-- Sort Dropdown Content -->
+          <div *ngIf="dropdownState.showSortDropdown()" class="absolute z-50 w-60 mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl right-0">
+            <div class="py-2">
+              <button
+                *ngFor="let option of sortOptions"
+                type="button"
+                (click)="selectSort(option.value)"
+                [class]="searchControls.sortControl.value === option.value ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'"
+                class="w-full text-left px-4 py-2 text-sm transition-colors"
+              >
+                {{ option.label }}
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Results Section -->
-  <div class="results-section py-8">
-    <div class="container mx-auto px-4">
-      <!-- Loading State -->
-      <div *ngIf="loading()" class="text-center py-12">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
-        <p class="mt-4 text-gray-400">Trend animeler yükleniyor...</p>
-      </div>
-
-      <!-- Results Grid -->
-      <div *ngIf="!loading() && animes().length > 0" class="anime-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4">
-        <app-anime-card 
-          *ngFor="let anime of animes(); trackBy: trackByAnimeId" 
-          [anime]="anime"
-          class="fade-in"
-        ></app-anime-card>
-      </div>
-
-      <!-- No Results -->
-      <div *ngIf="!loading() && animes().length === 0" class="text-center py-12">
-        <div class="text-6xl mb-4">📈</div>
-        <h3 class="text-xl font-semibold text-gray-300 mb-2">Trend anime bulunamadı</h3>
-        <p class="text-gray-500">Bu dönem için trend anime bulunamadı. Farklı bir zaman dilimi deneyin.</p>
-      </div>
+  <!-- Results and Grid Section -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    <!-- Results Count -->
+    <div class="mb-6">
+      <p class="text-gray-300 text-lg font-medium">
+        <span class="text-red-400">{{ currentDisplayCount() }} / {{ totalTrendingAnimes() }}</span> sonuç gösteriliyor
+      </p>
     </div>
-  </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading()" class="text-center py-16">
+      <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-red-500 border-t-transparent"></div>
+      <p class="text-gray-300 mt-4 text-lg">Trend animeler yükleniyor...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading() && animes().length === 0" class="text-center py-16">
+      <div class="text-6xl mb-4">😔</div>
+      <h3 class="text-2xl font-semibold text-gray-300 mb-2">Anime bulunamadı</h3>
+      <p class="text-gray-500 mb-6">Arama kriterlerinizi değiştirmeyi deneyin</p>
+      <button
+        (click)="clearFilters()"
+        class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+      >
+        Filtreleri Temizle
+      </button>
+    </div>
+
+    <!-- Anime Grid -->
+    <div *ngIf="!loading() && animes().length > 0" class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-6">
+      <app-anime-card
+        *ngFor="let anime of animes(); trackBy: trackByAnimeId"
+        [anime]="anime"
+        class="fade-in"
+      ></app-anime-card>
+    </div>
+
+    <!-- Loading Trigger -->
+    <div 
+      #loadingTrigger
+      [class.hidden]="loading() || currentDisplayCount() >= totalTrendingAnimes()"
+      class="text-center py-8"
+    >
+      <div class="inline-block animate-pulse h-8 w-8 bg-red-500 rounded-full"></div>
+      <p class="text-gray-400 mt-2">Daha fazla anime yükleniyor...</p>
+    </div>
+  </section>
 </div> 
