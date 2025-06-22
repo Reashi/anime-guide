@@ -22,7 +22,7 @@ export interface SearchFilters {
   providedIn: 'root'
 })
 export class AnilistService {
-  private readonly API_URL = 'https://graphql.anilist.co';
+  private readonly API_URL = '/api';
 
   constructor(
     private http: HttpClient,
@@ -44,142 +44,64 @@ export class AnilistService {
       });
     }
 
-    const query = `
-      query ($page: Int, $perPage: Int, $search: String, $genres: [String], $format: MediaFormat, $status: MediaStatus, $sort: [MediaSort], $startDateGreater: FuzzyDateInt, $startDateLesser: FuzzyDateInt, $season: MediaSeason, $seasonYear: Int) {
-        Page(page: $page, perPage: $perPage) {
-          pageInfo {
-            total
-            currentPage
-            lastPage
-            hasNextPage
-            perPage
-          }
-          media(search: $search, genre_in: $genres, format: $format, status: $status, sort: $sort, type: ANIME, startDate_greater: $startDateGreater, startDate_lesser: $startDateLesser, season: $season, seasonYear: $seasonYear) {
-            id
-            title {
-              romaji
-              english
-              native
+    // Arama varsa kendi API'yi kullan
+    if (filters.search && filters.search.trim()) {
+      return this.http.get<any>(`${this.API_URL}/anime/search?q=${encodeURIComponent(filters.search)}`).pipe(
+        map((response: any) => {
+          const transformedMedia = response.success ? 
+            response.data.map((item: any) => this.transformSingleAnime(item)) : [];
+          
+          return {
+            media: transformedMedia,
+            pageInfo: {
+              total: transformedMedia.length,
+              currentPage: 1,
+              lastPage: 1,
+              hasNextPage: false,
+              perPage: perPage
             }
-            synonyms
-            coverImage {
-              large
-              medium
+          };
+        }),
+        catchError(error => {
+          console.error('Arama API Hatası:', error);
+          return of({
+            media: [],
+            pageInfo: {
+              total: 0,
+              currentPage: 1,
+              lastPage: 1,
+              hasNextPage: false,
+              perPage: perPage
             }
-            description
-            format
-            status
-            episodes
-            duration
-            genres
-            averageScore
-            popularity
-            startDate {
-              year
-              month
-              day
-            }
-            endDate {
-              year
-              month
-              day
-            }
-          }
+          });
+        })
+      );
+    }
+
+    // Arama yoksa trending'i döndür
+    return this.getTrendingAnime(page, perPage).pipe(
+      map(response => ({
+        media: response.media,
+        pageInfo: {
+          total: response.media.length,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage
         }
-      }
-    `;
-
-    // API'ye gönderilecek değişkenler
-    const variables = {
-      page,
-      perPage,
-      search: filters.search ? filters.search.toLowerCase() : undefined,
-      genres: filters.genres?.length ? filters.genres : undefined,
-      format: filters.format || undefined,
-      status: filters.status || undefined,
-      sort: filters.sort || ['POPULARITY_DESC'],
-      startDateGreater: filters.yearStart ? parseInt(filters.yearStart.toString() + '0101') : undefined,
-      startDateLesser: filters.yearEnd ? parseInt(filters.yearEnd.toString() + '1231') : undefined,
-      season: filters.season,  // undefined yerine direkt season gönder
-      seasonYear: filters.year  // undefined yerine direkt year gönder
-    };
-
-
-
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    });
-
-    return this.http.post(this.API_URL, {
-      query,
-      variables
-    }, { headers }).pipe(
-      map((response: any) => {
-        if (response.errors) {
-          throw new Error(response.errors[0].message);
-        }
-
-        const media = response.data.Page.media || [];
-        const pageInfo = response.data.Page.pageInfo || {};
-
-        // Transform edilmiş anime verileri
-        const transformedMedia = media.map((item: any) => this.transformSingleAnime(item));
-
-        return {
-          media: transformedMedia,
-          pageInfo: pageInfo
-        };
-      }),
-      catchError(error => {
-        console.error('AniList API Hatası:', error);
-        return of({
-          media: [],
-          pageInfo: {
-            total: 0,
-            currentPage: 1,
-            lastPage: 1,
-            hasNextPage: false,
-            perPage: perPage
-          }
-        });
-      })
+      }))
     );
   }
 
   getTrendingAnime(page: number = 1, perPage: number = 20): Observable<{ media: Anime[] }> {
-    const query = `
-      query {
-        Page(page: ${page}, perPage: ${perPage}) {
-          media(sort: TRENDING_DESC, type: ANIME) {
-            id
-            title {
-              romaji
-              english
-              native
-            }
-            coverImage {
-              large
-              medium
-            }
-            averageScore
-            episodes
-            status
-            genres
-            seasonYear
-            startDate {
-              year
-              month
-              day
-            }
-          }
-        }
-      }
-    `;
+    // SSR sırasında boş response döndür
+    if (!isPlatformBrowser(this.platformId)) {
+      return of({ media: [] });
+    }
 
-    return this.makeRequest(query).pipe(
+    return this.http.get<any>(`${this.API_URL}/anime/trending?page=${page}`).pipe(
       map(response => ({
-        media: this.transformAnimeData(response.data.Page.media)
+        media: response.success ? this.transformAnimeData(response.data) : []
       })),
       catchError(error => {
         console.error('Trending error:', error);
@@ -189,89 +111,23 @@ export class AnilistService {
   }
 
   getPopularAnime(page: number = 1, perPage: number = 20): Observable<{ media: Anime[] }> {
-    const query = `
-      query {
-        Page(page: ${page}, perPage: ${perPage}) {
-          media(sort: POPULARITY_DESC, type: ANIME) {
-            id
-            title {
-              romaji
-              english
-              native
-            }
-            coverImage {
-              large
-              medium
-            }
-            averageScore
-            episodes
-            status
-            genres
-            seasonYear
-            startDate {
-              year
-              month
-              day
-            }
-          }
-        }
-      }
-    `;
+    // SSR sırasında boş response döndür
+    if (!isPlatformBrowser(this.platformId)) {
+      return of({ media: [] });
+    }
 
-    return this.makeRequest(query).pipe(
-      map(response => ({
-        media: this.transformAnimeData(response.data.Page.media)
-      })),
-      catchError(error => {
-        console.error('Popular error:', error);
-        return of({ media: [] });
-      })
-    );
+    // Popüler animeler için trending endpoint'i kullan
+    return this.getTrendingAnime(page, perPage);
   }
 
   getCurrentSeasonAnime(page: number = 1, perPage: number = 20): Observable<{ media: Anime[] }> {
-    const currentSeason = this.getCurrentSeason();
-    const currentYear = new Date().getFullYear();
-    
-    const query = `
-      query {
-        Page(page: ${page}, perPage: ${perPage}) {
-          media(sort: POPULARITY_DESC, type: ANIME, season: ${currentSeason}, seasonYear: ${currentYear}) {
-            id
-            title {
-              romaji
-              english
-              native
-            }
-            coverImage {
-              large
-              medium
-            }
-            averageScore
-            episodes
-            status
-            genres
-            seasonYear
-            season
-            startDate {
-              year
-              month
-              day
-            }
-          }
-        }
-      }
-    `;
+    // SSR sırasında boş response döndür
+    if (!isPlatformBrowser(this.platformId)) {
+      return of({ media: [] });
+    }
 
-    return this.makeRequest(query).pipe(
-      map(response => ({
-        media: this.transformAnimeData(response.data.Page.media)
-      })),
-      catchError(error => {
-        console.error('Season anime error:', error);
-        return of({ media: [] });
-      })
-    );
+    // Şimdilik trending animeleri döndür
+    return this.getTrendingAnime(page, perPage);
   }
 
   private getCurrentSeason(): string {
@@ -314,101 +170,34 @@ export class AnilistService {
       });
     }
 
-    const query = `
-      query {
-        Page(page: ${page}, perPage: ${perPage}) {
-          pageInfo {
-            total
-            currentPage
-            lastPage
-            hasNextPage
-            perPage
-          }
-          media(sort: POPULARITY_DESC, type: ANIME, season: ${season}, seasonYear: ${year}) {
-            id
-            title {
-              romaji
-              english
-              native
-            }
-            coverImage {
-              large
-              medium
-            }
-            averageScore
-            episodes
-            status
-            genres
-            seasonYear
-            season
-            startDate {
-              year
-              month
-              day
-            }
-          }
-        }
-      }
-    `;
-
-    return this.makeRequest(query).pipe(
+    // Şimdilik trending animeleri döndür
+    return this.getTrendingAnime(page, perPage).pipe(
       map(response => ({
-        media: this.transformAnimeData(response.data.Page.media),
-        pageInfo: response.data.Page.pageInfo
-      })),
-      catchError(error => {
-        console.error('Season animes error:', error);
-        return of({ 
-          media: [], 
-          pageInfo: {
-            total: 0,
-            currentPage: 1,
-            lastPage: 1,
-            hasNextPage: false,
-            perPage: perPage
-          }
-        });
-      })
+        media: response.media,
+        pageInfo: {
+          total: response.media.length,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage
+        }
+      }))
     );
   }
 
   getAnimeById(id: number): Observable<Anime> {
-    const query = `
-      query {
-        Media(id: ${id}, type: ANIME) {
-          id
-          title {
-            romaji
-            english
-            native
-          }
-          description
-          coverImage {
-            large
-            medium
-          }
-          bannerImage
-          averageScore
-          episodes
-          status
-          genres
-          seasonYear
-          startDate {
-            year
-            month
-            day
-          }
-          studios {
-            nodes {
-              name
-            }
-          }
-        }
-      }
-    `;
+    // SSR sırasında boş anime döndür
+    if (!isPlatformBrowser(this.platformId)) {
+      return of(this.createEmptyAnime(id));
+    }
 
-    return this.makeRequest(query).pipe(
-      map(response => this.transformSingleAnime(response.data.Media)),
+    return this.http.get<any>(`${this.API_URL}/anime/${id}`).pipe(
+      map(response => {
+        if (response.success && response.data) {
+          return this.transformSingleAnime(response.data);
+        }
+        return this.createEmptyAnime(id);
+      }),
       catchError(error => {
         console.error('Anime detail error:', error);
         return of(this.createEmptyAnime(id));
@@ -416,25 +205,21 @@ export class AnilistService {
     );
   }
 
+  // Bu metod artık kullanılmıyor - kendi API'mizi kullanıyoruz
   private makeRequest(query: string): Observable<any> {
-    // SSR sırasında boş response döndür
-    if (!isPlatformBrowser(this.platformId)) {
-      return of({
-        data: {
-          Page: {
-            media: [],
-            pageInfo: {
-              total: 0,
-              currentPage: 1,
-              lastPage: 1,
-              hasNextPage: false
-            }
+    return of({
+      data: {
+        Page: {
+          media: [],
+          pageInfo: {
+            total: 0,
+            currentPage: 1,
+            lastPage: 1,
+            hasNextPage: false
           }
         }
-      });
-    }
-
-    return this.http.post(this.API_URL, { query });
+      }
+    });
   }
 
   private transformAnimeData(media: any[]): Anime[] {
@@ -449,16 +234,22 @@ export class AnilistService {
       return this.createEmptyAnime(0);
     }
 
+    // MongoDB'den gelen veri için daha esnek mapping
+    const coverImageUrl = item.coverImage?.large || 
+                         item.coverImage?.medium || 
+                         (typeof item.coverImage === 'string' ? item.coverImage : null) ||
+                         '/assets/placeholder-anime.svg';
+
     return {
-      id: item.id || 0,
-      title: item.title?.romaji || item.title?.english || item.title?.native || 'Bilinmeyen Başlık',
+      id: item.id || item._id || 0,
+      title: item.title?.romaji || item.title?.english || item.title?.native || item.title || 'Bilinmeyen Başlık',
       englishTitle: item.title?.english,
       nativeTitle: item.title?.native,
-      averageScore: item.averageScore || 0,
+      averageScore: item.averageScore || item.score || 0,
       description: item.description || '',
-      coverImage: item.coverImage?.large || item.coverImage?.medium || '/placeholder-anime.jpg',
+      coverImage: coverImageUrl,
       bannerImage: item.bannerImage,
-      score: item.averageScore || 0,
+      score: item.averageScore || item.score || 0,
       popularity: item.popularity || 0,
       favourites: item.favourites || 0,
       episodes: item.episodes,
@@ -475,10 +266,12 @@ export class AnilistService {
         day: item.endDate.day
       } : undefined,
       season: item.season,
-      seasonYear: item.seasonYear,
+      seasonYear: item.seasonYear || item.year,
       format: item.format,
-      genres: item.genres || [],
-      studios: item.studios?.nodes?.map((studio: any) => studio.name) || [],
+      genres: item.genres || item.genre || [],
+      studios: item.studios?.nodes?.map((studio: any) => studio.name) || 
+               item.studios?.map((studio: any) => typeof studio === 'string' ? studio : studio.name) || 
+               [],
       trailer: item.trailer ? {
         id: item.trailer.id,
         site: item.trailer.site
@@ -495,7 +288,7 @@ export class AnilistService {
       nativeTitle: undefined,
       averageScore: 0,
       description: '',
-      coverImage: '/placeholder-anime.jpg',
+      coverImage: '/assets/placeholder-anime.svg',
       bannerImage: undefined,
       score: 0,
       popularity: 0,

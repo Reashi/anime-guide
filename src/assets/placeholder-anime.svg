@@ -1,0 +1,11 @@
+<svg width="200" height="300" viewBox="0 0 200 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="300" fill="#374151"/>
+  <rect x="20" y="20" width="160" height="260" fill="#4B5563"/>
+  <circle cx="100" cy="120" r="30" fill="#6B7280"/>
+  <text x="100" y="200" text-anchor="middle" fill="#9CA3AF" font-family="Arial" font-size="14">
+    Anime Görseli
+  </text>
+  <text x="100" y="220" text-anchor="middle" fill="#9CA3AF" font-family="Arial" font-size="12">
+    Yükleniyor...
+  </text>
+</svg> 
